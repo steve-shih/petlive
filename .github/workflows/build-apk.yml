@@ -36,11 +36,14 @@ jobs:
       - name: Sync Capacitor to Android
         working-directory: ./frontend
         run: |
+          npm install @capacitor/core @capacitor/android
           npx cap sync android
 
       - name: Build APK
         working-directory: ./frontend/android
-        run: ./gradlew assembleDebug
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
