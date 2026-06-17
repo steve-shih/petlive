@@ -1,52 +1,66 @@
-name: Build Android APK
+# ==========================================
+# 📂 存放路徑：petlive/.github/workflows/build-apk.yml
+# 📖 檔案解說：這是一個 GitHub Actions 自動化腳本，專門用來將 PetLive 的前端網頁 (Next.js) 透過 Capacitor 打包成 Android 的 APK 安裝檔。
+# 🚀 觸發條件：當有人推送程式碼到 main 分支，或者手動點擊執行 (workflow_dispatch) 時觸發。
+# ==========================================
+
+name: Build Android APK # 這個腳本的名稱
 
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main # 只有推送到 main 分支時才會觸發
+  workflow_dispatch: # 允許您在 GitHub 網頁上點擊 "Run workflow" 手動執行
 
 jobs:
   build-android:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-latest # 在最新的 Ubuntu 虛擬機上跑
+    
     steps:
+      # [步驟 1] 下載原始碼
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      # [步驟 2] 安裝 Node.js (給網頁前端打包使用)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
+      # [步驟 3] 安裝 Java JDK (給 Android 打包使用)
       - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '21'
 
+      # [步驟 4] 安裝前端必備套件 (相當於 npm install)
       - name: Install Frontend Dependencies
-        working-directory: ./frontend
+        working-directory: ./frontend # 進入 frontend 資料夾
         run: npm ci
 
+      # [步驟 5] 將 Next.js 網頁編譯成純靜態檔案 (Static Export)
       - name: Build Next.js Static Export
         working-directory: ./frontend
         run: npm run build
 
+      # [步驟 6] 透過 Capacitor 把靜態網頁轉換成 Android 專案結構
       - name: Sync Capacitor to Android
         working-directory: ./frontend
         run: |
           npm install @capacitor/core @capacitor/android
           npx cap sync android
 
+      # [步驟 7] 使用 Gradle 正式編譯並產出 APK 安裝檔
       - name: Build APK
         working-directory: ./frontend/android
         run: |
-          chmod +x ./gradlew
-          ./gradlew assembleDebug
+          chmod +x ./gradlew # 給予 gradlew 執行權限
+          ./gradlew assembleDebug # 產出 Debug 版本的 APK
 
+      # [步驟 8] 將產出好的 APK 檔案上傳到 GitHub，讓您可以點擊下載！
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: petlive-app-debug.apk
-          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          name: petlive-app-debug.apk # 您下載下來的壓縮檔名稱
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk # 指示上傳哪一個路徑的檔案
