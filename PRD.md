@@ -1,4 +1,4 @@
-# 🐾 寵物live - Web 前後端系統詳細規格書 (v4.0 擴充版)
+# 🐾 寵物live - Web 前後端系統詳細規格書 (v4.1 擴充版)
 
 本文件為 **PetLive** 系統的最高指導原則。初期開發重心將全面放在「Web 前後端與系統基建」，以確保底層邏輯穩健、資料庫具備擴充性，並透過網頁端完美避開 APP 平台的 30% 抽成。
 
@@ -6,7 +6,7 @@
 
 ## 🗄️ 一、 詳細資料庫綱要 (Data Structure & ERD)
 
-本系統基於 **Python Flask** 與 **PostgreSQL (Cloud SQL)**，並使用 `SQLAlchemy` 作為 ORM 框架。以下為核心實體關聯設計。
+本系統基於 **Python Flask** 與 **PostgreSQL (Cloud SQL)** (或初期 MongoDB)，並使用 RESTful/WebSocket 作為核心。以下為核心實體關聯設計。
 
 ```mermaid
 erDiagram
@@ -15,6 +15,7 @@ erDiagram
     User ||--o{ Order : "買/賣關聯"
     User ||--o{ OrderMessage : "發送訊息"
     User ||--o| LiveRoom : "開啟直播"
+    User ||--o{ Media : "擁有 (錄影/圖片)"
     
     Product ||--o| BidItem : "若是競標型"
     Product ||--o{ Order : "產生訂單"
@@ -27,163 +28,72 @@ erDiagram
 買賣家共用帳號。使用第三方登入時不需密碼。
 | 欄位名稱 | 型別設定 | 說明與關聯 |
 | :--- | :--- | :--- |
-| `id` | UUID (PK) | 唯一識別碼 |
-| `email` | String (Unique) | 登入帳號或第三方綁定信箱 |
-| `password_hash` | String (Nullable) | 使用者密碼加密 (若為 Google/LINE 登入則為 NULL) |
-| `auth_provider` | Enum | `LOCAL`, `GOOGLE`, `LINE` |
+| `id` | String/UUID (PK) | 唯一識別碼 |
+| `email` / `phone` | String (Unique) | 登入帳號聯絡方式 |
+| `password` | String | 使用者密碼 (未來採 hash) |
 | `role` | Enum | `BUYER` (買家), `SELLER` (賣家), `ADMIN` (管理員) |
-| `credit_score` | Int | 信用分數，預設 `100`，滿分 `200`。低於門檻將限制出價權限。 |
-| `seller_subscription_end`| DateTime (Nullable) | 賣家訂閱到期日。過期後自動降級權限。 |
-| `created_at` | DateTime | 帳號建立時間 |
+| `is_test` | Boolean | 是否為測試帳號。`True` 允許管理員強制切換身分 |
+| `credit_score` | Int | 信用分數，預設 `100`，滿分 `200` |
 
-### 2. Product (商品)
-賣家上架商品主檔。上架初期需經過人工審核。
+### 2. LiveRoom (直播間) & Media (多媒體/錄影)
+紀錄直播與錄影儲存。
 | 欄位名稱 | 型別設定 | 說明與關聯 |
 | :--- | :--- | :--- |
-| `id` | UUID (PK) | 商品編號 |
-| `seller_id` | UUID (FK) | 關聯 `User.id` |
-| `title` | String | 商品標題 (如：長戟大兜蟲 150mm) |
-| `description` | Text | 商品圖文描述 |
-| `type` | Enum | `BUY_NOW` (直購), `BID` (競標) |
-| `images` | Array[String] | 存放於 GCS 的圖片 URL 陣列 |
-| `status` | Enum | `PENDING_REVIEW` (待審), `ACTIVE` (上架), `SOLD` (已售) |
-| `stock` | Int | 直購庫存數量 (若是競標通常為 1) |
-
-### 3. BidItem (競標設定)
-僅有 `type` 為 `BID` 的商品才會有此表關聯。
-| 欄位名稱 | 型別設定 | 說明與關聯 |
-| :--- | :--- | :--- |
-| `id` | UUID (PK) | 競標設定編號 |
-| `product_id` | UUID (FK) | 關聯 `Product.id` |
-| `start_price` | Decimal | 起標價 |
-| `current_price` | Decimal | 當前最高價 (透過 Redis 鎖定更新) |
-| `min_increment` | Decimal | 每次最少加價金額 (例如 50 元) |
-| `end_time` | DateTime | 預定結標時間 |
-
-### 4. BidRecord (出價紀錄)
-透過 Socket.io 接收後，經由 Celery 非同步成功寫入的歷史明細。
-| 欄位名稱 | 型別設定 | 說明與關聯 |
-| :--- | :--- | :--- |
-| `id` | UUID (PK) | 出價紀錄編號 |
-| `bid_item_id` | UUID (FK) | 關聯 `BidItem.id` |
-| `user_id` | UUID (FK) | 關聯出價者 `User.id` |
-| `bid_amount` | Decimal | 該次出價金額 |
-| `created_at` | DateTime | 伺服器接收到出價的精確時間 |
-
-### 5. Order (訂單)
-結帳或得標後產生的最終訂單。
-| 欄位名稱 | 型別設定 | 說明與關聯 |
-| :--- | :--- | :--- |
-| `id` | UUID (PK) | 訂單編號 |
-| `buyer_id` | UUID (FK) | 買方 `User.id` |
-| `seller_id` | UUID (FK) | 賣方 `User.id` |
-| `total_amount` | Decimal | 最終結帳金額 (得標價或直購總價) |
-| `logistics_status` | Enum | `PENDING` (待處理), `SHIPPED` (已出貨), `COMPLETED` (完成) |
-| `tracking_number` | String (Nullable) | 賣家手動填寫的物流單號 (7-11/黑貓) |
-| `is_abandoned` | Boolean | 預設 `False`。若為 `True` 代表惡意棄標，將觸發扣分懲罰。 |
-
-### 6. OrderMessage (得標聊天)
-得標後專屬的 1v1 私密聊天室。
-| 欄位名稱 | 型別設定 | 說明與關聯 |
-| :--- | :--- | :--- |
-| `id` | UUID (PK) | 訊息編號 |
-| `order_id` | UUID (FK) | 關聯 `Order.id` (以此作為房間 ID) |
-| `sender_id` | UUID (FK) | 發送者 `User.id` (買方或賣方) |
-| `message_text` | Text | 訊息文字內容 |
-| `created_at` | DateTime | 發送時間 |
-
-### 7. LiveRoom (直播間)
-紀錄 SRS 伺服器的串流狀態。
-| 欄位名稱 | 型別設定 | 說明與關聯 |
-| :--- | :--- | :--- |
-| `id` | UUID (PK) | 直播間編號 |
+| `room_id` | UUID (PK) | 直播間編號 |
 | `seller_id` | UUID (FK) | 直播主 `User.id` |
-| `title` | String | 直播標題 |
-| `stream_key` | String | 串流金鑰 (OBS 推流使用) |
-| `status` | Enum | `IDLE` (未開播), `LIVE` (直播中), `ENDED` (已結束) |
-| `max_viewers` | Int | 硬性限制最高 50 人在線 |
+| `thumbnail_url` | String | 直播封面 (由前端 Canvas 每數分鐘自動擷取並上傳) |
+| `status` | Enum | `LIVE` (直播中), `ENDED` (已結束) |
+
+**Media 表 (包含 LIVE 錄影)**
+| 欄位名稱 | 型別設定 | 說明與關聯 |
+| :--- | :--- | :--- |
+| `type` | Enum | `LIVE_RECORD` |
+| `url` | String | 後端 `/uploads` 之相對路徑 |
+| `status` | Enum | `PUBLIC` (公開展示), `PRIVATE` (僅自己可見) |
 
 ---
 
 ## 🖥️ 二、 Web 前端頁面與組件規劃 (React / Next.js)
 
-### 1. 首頁與公共頁面 (Public Pages)
-- **首頁 (Home `/`)**
-  - **Hero Banner**: 輪播圖（展示強打活動或熱門賣家）。
-  - **Live Now 區塊**: 橫向滑動列表，展示進行中的直播間（最多顯示 10 間）。需顯示封面圖與醒目的「LIVE」紅底白字動態標籤。
-  - **熱門競標區塊**: 顯示即將結標的高價甲蟲/爬蟲，包含動態倒數計時器與當前最高價。
-  - **最新直購區塊**: 顯示一般耗材（如：保濕介質、果凍）。
-- **登入/註冊頁面 (Auth `/login`)**
-  - **Google 快速登入按鈕** (OAuth 2.0)
-  - **LINE 快速登入按鈕** (LINE Login V2)
-  - 傳統 Email 與密碼輸入框
+### 1. 登入與註冊系統 (Auth)
+- **註冊頁面 (`/register`)**：支援「手機」或「Email」雙軌驗證，需輸入驗證碼，註冊成功後建立帳號。
+- **登入頁面 (`/login`)**：
+  - 支援傳統帳密登入。
+  - 內建 `Google` 與 `LINE` 第三方登入按鈕 (預留擴充)。
+  - **嚴格防護**：訪客必須登入才能查看其他買賣家資訊與進入直播間。
 
-### 2. 商品與交易頁面 (Shopping & Bidding)
-- **商品列表頁 (Catalog `/products`)**
-  - **左側篩選器**：寵物種類（甲蟲、爬蟲、用品）、交易模式（直購、競標）。
-  - **商品卡片網格**：RWD 響應式 Grid View。
-- **商品詳情與競標頁 (Product Detail `/product/[id]`)**
-  - **商品資訊**: 圖片輪播、產地、學名、尺寸、賣家接受之物流方式（7-11、黑貓、空軍一號）。
-  - **直購模式**: 數量選擇器、「加入購物車」與「立即購買」按鈕。
-  - **競標模式**: 
-    - 倒數計時器與當前最高出價（透過 WebSocket 即時連動跳動）。
-    - 快捷出價按鈕（例如：`+NT$50`、`+NT$100`）與自訂金額輸入框。
-    - 即時出價歷史紀錄列表 (包含半隱碼的買家名稱，如 `ste***@gmail.com`)。
+### 2. 社群平台引流神器 (Social Media Generator)
+專為賣家設計的導流工具，用於在 Facebook, Instagram (含限動), Threads 打廣告。
+- **一鍵生成高質感圖卡**：系統自動將「直播封面/賣家頭像」加上「專屬 QR Code」及「寵BAR Logo」合成為圖片供賣家下載。
+- **高轉換文案模板**：提供數組短文案與短網址，一鍵複製即可至各大社團與論壇貼文。
 
-### 3. Live 互動直播模組 (Live Room `/live/[id]`)
-- **主要視訊區**: 嵌入 HTTP-FLV 播放器（承接 SRS 伺服器影像，目標延遲 < 2 秒）。
-- **互動聊天室 (右側)**: 觀眾即時留言區，支援新訊息自動捲動到底部。
-- **釘選商品區 (下方)**: 賣家設定展示的商品卡片。若是競標商品，買家可直接在此面板點擊「出價」，無須跳離或遮擋直播畫面。
+### 3. Live 互動直播模組 (Live Room)
+- **WebRTC P2P 串流**：採用 PeerJS 進行連線，買家低延遲觀看。
+- **直播端自動錄影**：
+  - 賣家開啟直播時，前端同步啟動 `MediaRecorder` 進行錄製。
+  - **自動分段**：為避免檔案過大，每 30 分鐘自動停止打包並上傳至後端，隨即重啟新錄影。
+  - 結束直播時上傳最後一段影片。
+- **即時封面更新**：賣家端每隔幾分鐘自動將 `<video>` 繪製至 `<canvas>` 並轉成圖片上傳，作為首頁直播列表的動態封面。
 
-### 4. 會員中心 (Buyer Dashboard `/account`)
-- **信用資訊儀表板**: 顯示目前的信用分數（滿分 200）、視覺化的等級勳章（銀牌/金牌）、總得標數與棄標次數。
-- **我的出價紀錄**: 正在進行中與已結標的追蹤清單。
-- **訂單管理**: 狀態包含：`待出貨`、`已出貨`、`已完成`。
-- **專屬聊天室按鈕**: 針對已得標或成立的訂單，點擊可開啟與賣家的一對一文字聊天室。
-- **放棄得標按鈕**: 點擊後彈出紅色警告視窗：「⚠️ 確定放棄？確認棄標將立即扣除 10 點信用分數，分數過低將被永久停權！」
-
-### 5. 賣家管理後台 (Seller Admin `/seller`)
-- **賣家資格與訂閱**: 若未訂閱，顯示綠界信用卡刷卡頁面，引導付費開通賣家權限。
-- **商品上架表單**:
-  - 上傳多張圖片/影片、填寫標題與詳細描述。
-  - 選擇交易模式（設定起標價、結標時間、每次最小增額）。
-  - **提示：** 送出後狀態為「待人工審核」，經管理員放行後才會轉為 `ACTIVE`。
-- **直播控制台**: 
-  - 獲取專屬推流金鑰 (Stream Key)。
-  - 設定直播標題。
-  - 手動釘選/取消釘選畫面下方的展示商品（支援直播中動態切換商品）。
-- **訂單出貨管理**: 查看買家收件資料，手動填寫並更新「物流追蹤單號」。
+### 4. 會員中心 (Profile / Dashboard)
+- **LIVE 錄影回放管理** (賣家專屬)：
+  - 顯示所有自動上傳成功的歷史錄影清單。
+  - 提供切換影片為 `PUBLIC` (公開給買家看) 或 `PRIVATE` (隱藏) 的開關，並支援「刪除」功能。
+- **管理員專屬後門 (Admin Impersonation)**：
+  - 若登入身分為 `ADMIN`，提供「📋 查詢測試帳密」按鈕，可查看所有 `is_test: true` 的帳號與明文密碼。
+  - 管理員可強制登入任何測試帳號進行操作，並在畫面頂部顯示「🛠️ 管理員模式下切入 XXX」的全域紅色警示列。
 
 ---
 
 ## ⚙️ 三、 核心系統與資料流邏輯 (Business Logic Rules)
 
-> [!CAUTION]
-> 以下三點為系統後端實作之最高指導原則，開發 API 時必須嚴格遵守以防範商業風險。
+### 1. 錄影檔案管理 (Backend Storage)
+- 後端建立 `/uploads` 目錄。
+- 提供 `POST /api/live/upload-record` 接收 multipart form data，並寫入 `media` 表。
+- 當影片被設定為 `PUBLIC` 時，其他買家進入該賣家的主頁時，可看見並回放這些精華片段。
 
-### 1. 競標高併發防呆機制 (Redis Lock)
-- **問題場景**: 結標前 5 秒，100 人同時點擊「出價 1000 元」，若無防護，資料庫會寫入 100 筆 1000 元紀錄，產生重大爭議。
-- **實作規範**: 
-  1. API 接收請求後，第一步先在 **Redis** 檢查當前最高價。
-  2. 使用 `Redis 分散式鎖 (Distributed Lock)` 鎖定該商品。
-  3. 驗證客戶出價 `> 最高價 + 最小增額`。
-  4. 驗證通過，更新 Redis 中的最新價格，釋放鎖定。
-  5. 成功後，將紀錄拋給 `Celery Worker` 進行非同步的 PostgreSQL `BidRecord` 寫入（削減資料庫 I/O 壓力）。
-  6. 透過 `Socket.io` 廣播最新價格給所有觀看該頁面的客戶端。
+### 2. 競標高併發防呆機制 (Redis Lock)
+- 確保結標前大量出價的正確性，透過分散式鎖防止重複寫入。
 
-### 2. 棄標懲罰機制 (自動與手動扣分)
-- **觸發條件 A**: 買家在訂單頁面主動點擊「放棄得標」。
-- **觸發條件 B**: `Celery Beat` 排程每日掃描，發現訂單超過 48 小時未付款。
-- **執行動作**: 
-  1. 將 `Order.is_abandoned` 設為 `True`。
-  2. 觸發資料庫更新：`User.credit_score = User.credit_score - 10`。
-  3. **出價攔截器 (Interceptor)**: 當會員登入或呼叫出價 API 時，若 `credit_score` 低於系統設定門檻（例如 50 分），API 將回傳 `403 Forbidden` 並阻擋該帳號對任何商品出價。
-
-### 3. 得標聊天室創建 (Cron/Celery 自動化)
-- **執行時機**: 當競標時間結束 (`BidItem.end_time` 到期)。
-- **實作規範**:
-  1. 後端排程 (`Celery Beat` 或 Scheduler) 會精確到秒級別，自動掃描到期商品。
-  2. 鎖定該商品狀態，判定 `BidRecord` 中的最高出價者。
-  3. 系統自動建立一筆關聯雙方的 `Order` (狀態為待處理)。
-  4. 系統**立即開通**該訂單專屬的 `OrderMessage` 權限。
-  5. 透過系統發送 Socket/Email 通知雙方：「恭喜得標！專屬聊天室已開通，請前往協調寄送事宜」。
+### 3. 棄標懲罰機制 (自動與手動扣分)
+- `is_abandoned` 標記為 True 時扣除信用分數 10 分。信用低於標準將限制未來出價。
