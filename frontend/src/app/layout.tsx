@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Navbar from "./components/Navbar";
-import BottomNav from "./components/BottomNav";
-import NgrokBypass from "./components/NgrokBypass";
 import { ToastProvider } from "./components/Toast";
 import { ThemeProvider } from "./components/ThemeContext";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import LayoutWrapper from "./components/LayoutWrapper";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,19 +15,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Use env variable or fallback to a placeholder for testing
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "788146443516-97ieiv3lpoauiehkpk7cnqnv82tqgh0v.apps.googleusercontent.com";
+
   return (
     <html lang="zh-TW" data-theme="dark">
-      <body className="antialiased min-h-screen flex flex-col bg-background text-text-primary">
-        <ThemeProvider>
-          <ToastProvider>
-          <NgrokBypass />
-          <Navbar />
-          <main className="flex-1 flex flex-col items-center pt-24 pb-20 md:pb-0">
-            {children}
-          </main>
-          <BottomNav />
-        </ToastProvider>
-        </ThemeProvider>
+      <body className="antialiased min-h-screen flex flex-col bg-background text-text-primary" suppressHydrationWarning>
+        <GoogleOAuthProvider clientId={clientId}>
+          <ThemeProvider>
+            <ToastProvider>
+              <LayoutWrapper>
+                {children}
+              </LayoutWrapper>
+            </ToastProvider>
+          </ThemeProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

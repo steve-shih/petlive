@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "./ThemeContext";
 
@@ -11,6 +11,14 @@ export default function Navbar() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ products: any[], users: any[] } | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  
   const router = useRouter();
 
   useEffect(() => {
@@ -18,7 +26,18 @@ export default function Navbar() {
       setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSearchResults(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -44,10 +63,34 @@ export default function Navbar() {
           setCurrentUser(null);
         }
       })
-      .catch(err => {
-        console.error("Failed to fetch users:", err);
-      });
+      .catch(err => console.error("Failed to fetch users:", err));
   }, []);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    
+    if (!val.trim()) {
+      setSearchResults(null);
+      return;
+    }
+    
+    setIsSearching(true);
+    searchTimeoutRef.current = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(val)}`, { headers: { "ngrok-skip-browser-warning": "69420" } })
+        .then(res => res.json())
+        .then(data => {
+          setSearchResults(data);
+          setIsSearching(false);
+        })
+        .catch(err => {
+          console.error("Search failed:", err);
+          setIsSearching(false);
+        });
+    }, 500);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("current_user_id");
@@ -95,12 +138,13 @@ export default function Navbar() {
     )}
     <nav className={`fixed ${adminUserId ? 'top-8' : 'top-0'} w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-background/80 backdrop-blur-md shadow-sm border-b border-surface' : 'bg-transparent'}`}>
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <div className="flex items-center space-x-12">
+        <div className="flex items-center space-x-8 lg:space-x-12">
           <Link href="/" className="text-3xl font-extrabold tracking-tighter text-brand">
             寵BAR
           </Link>
-          {/* Desktop Links - Hidden on Mobile */}
-          <div className="hidden md:flex space-x-6">
+          
+          {/* Desktop Links */}
+          <div className="hidden md:flex items-center space-x-6">
             <Link href="/" className="text-text-secondary hover:text-brand transition-colors font-medium">首頁</Link>
             <Link href="/live" className="text-red-500 hover:text-red-600 transition-colors font-bold flex items-center space-x-1">
               <span className="animate-pulse">●</span>
@@ -118,11 +162,81 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Right side icons & Search */}
-        <div className="flex items-center space-x-4 md:space-x-6">
+        {/* Right side: Search, Theme, User */}
+        <div className="flex items-center space-x-3 md:space-x-6">
           
-          {/* Theme Toggle Dropdown */}
-          <div className="relative group">
+          {/* Global Search Bar (Visible if logged in) */}
+          {currentUser && (
+            <div className="relative hidden sm:block" ref={searchRef}>
+              <div className="flex items-center bg-surface border border-surface-hover rounded-full px-4 py-2 w-64 focus-within:border-brand focus-within:ring-1 focus-within:ring-brand transition-all">
+                <span className="text-text-secondary mr-2">🔍</span>
+                <input 
+                  type="text" 
+                  placeholder="萬能搜尋 (產品、人員)" 
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="bg-transparent border-none outline-none text-sm w-full text-text-primary placeholder:text-text-secondary"
+                />
+              </div>
+              
+              {/* Search Dropdown */}
+              {(searchResults || isSearching) && (
+                <div className="absolute top-full mt-2 w-80 right-0 bg-background border border-surface rounded-2xl shadow-2xl overflow-hidden py-2 max-h-[70vh] overflow-y-auto">
+                  {isSearching ? (
+                    <div className="px-4 py-6 text-center text-text-secondary text-sm">搜尋中...</div>
+                  ) : (
+                    <>
+                      {/* Products Section */}
+                      {searchResults?.products && searchResults.products.length > 0 && (
+                        <div className="mb-2">
+                          <div className="px-4 py-1 text-xs font-bold text-text-secondary uppercase tracking-wider bg-surface/50">📦 產品</div>
+                          {searchResults.products.map(p => (
+                            <Link 
+                              key={p.id} 
+                              href={`/product/${p.id}`}
+                              onClick={() => { setSearchResults(null); setSearchQuery(''); }}
+                              className="block px-4 py-2 hover:bg-surface transition-colors"
+                            >
+                              <div className="font-bold text-sm text-brand truncate">{p.title}</div>
+                              <div className="text-xs text-text-secondary truncate">{p.description}</div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Users Section */}
+                      {searchResults?.users && searchResults.users.length > 0 && (
+                        <div>
+                          <div className="px-4 py-1 text-xs font-bold text-text-secondary uppercase tracking-wider bg-surface/50">👤 人員</div>
+                          {searchResults.users.map(u => (
+                            <Link 
+                              key={u.id} 
+                              href={`/seller/${u.id}`}
+                              onClick={() => { setSearchResults(null); setSearchQuery(''); }}
+                              className="px-4 py-2 hover:bg-surface transition-colors cursor-pointer flex items-center justify-between block"
+                            >
+                              <div>
+                                <div className="font-bold text-sm text-text-primary truncate">{u.name}</div>
+                                <div className="text-xs text-text-secondary truncate">{u.role}</div>
+                              </div>
+                              <button className="text-xs bg-brand/10 text-brand px-2 py-1 rounded hover:bg-brand/20">查看</button>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {(!searchResults?.products?.length && !searchResults?.users?.length) && (
+                        <div className="px-4 py-6 text-center text-text-secondary text-sm">找不到相關結果</div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Theme Toggle */}
+          <div className="relative group hidden sm:block">
             <button className="flex items-center justify-center w-10 h-10 rounded-full bg-surface hover:bg-surface-hover transition-colors">
               {theme === 'dark' ? '🌙' : theme === 'light' ? '☀️' : '🌫️'}
             </button>
@@ -142,7 +256,7 @@ export default function Navbar() {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${!currentUser ? 'bg-brand text-white' : 'bg-brand/10 text-brand'}`}>
                 {currentUser ? (currentUser.name?.charAt(0) || '?') : '登入'}
               </div>
-              <div className="flex flex-col items-start text-xs text-left">
+              <div className="hidden sm:flex flex-col items-start text-xs text-left">
                 <span className="font-bold text-text-primary">{currentUser?.name || '訪客模式'}</span>
                 <span className="text-text-secondary">{currentUser?.role || '點此登入 / 註冊'}</span>
               </div>
@@ -183,13 +297,13 @@ export default function Navbar() {
                   <Link href="/profile?tab=orders" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
                     <span>📦</span> 買到的訂單
                   </Link>
-                  <Link href="/profile?tab=wishlist" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
+                  <Link href="/profile?tab=watchlist" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
                     <span>🤍</span> 關注清單
                   </Link>
                   <Link href="/profile?tab=notifications" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
                     <span>🔔</span> 通知
                   </Link>
-                  <Link href="/settings" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
+                  <Link href="/profile?tab=settings" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
                     <span>⚙️</span> 帳號設定
                   </Link>
                   <Link href="/profile?tab=credit" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">

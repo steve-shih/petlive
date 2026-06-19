@@ -26,7 +26,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [mainCategory, setMainCategory] = useState<string>("ALL");
   const [subCategory, setSubCategory] = useState<string>("ALL");
-  const [filterFollowed, setFilterFollowed] = useState<boolean>(true);
+  const [filterFollowed, setFilterFollowed] = useState<boolean>(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const loadProducts = () => {

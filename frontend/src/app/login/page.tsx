@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
 import Link from "next/link";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,8 +40,12 @@ export default function LoginPage() {
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    showToast(`【${provider} 登入】功能即將開放，敬請期待！`, "info");
+  const handleLineLogin = () => {
+    const channelId = "2010452149";
+    const redirectUri = encodeURIComponent(window.location.origin + "/login/line/callback");
+    const state = Math.random().toString(36).substring(7);
+    const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${channelId}&redirect_uri=${redirectUri}&state=${state}&scope=profile%20openid%20email`;
+    window.location.href = lineAuthUrl;
   };
 
   return (
@@ -97,17 +102,44 @@ export default function LoginPage() {
 
         <div className="mt-6 space-y-3">
           <button 
-            onClick={() => handleSocialLogin('LINE')}
+            type="button"
+            onClick={handleLineLogin}
             className="w-full flex items-center justify-center space-x-2 bg-[#00C300] hover:bg-[#00B300] text-white font-bold py-3 rounded-xl transition-colors"
           >
             <span>💬 LINE 登入</span>
           </button>
-          <button 
-            onClick={() => handleSocialLogin('Google')}
-            className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-100 text-gray-800 font-bold py-3 rounded-xl transition-colors border border-gray-200"
-          >
-            <span>G Google 登入</span>
-          </button>
+          
+          <div className="w-full flex justify-center">
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                setLoading(true);
+                setError("");
+                try {
+                  const res = await fetch("/api/auth/google", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "69420" },
+                    body: JSON.stringify({ token: credentialResponse.credential })
+                  });
+                  const data = await res.json();
+                  if (res.ok) {
+                    localStorage.setItem("current_user_id", data.user.id);
+                    window.location.href = "/";
+                  } else {
+                    setError(data.error || "Google 登入失敗");
+                    setLoading(false);
+                  }
+                } catch (err) {
+                  console.error(err);
+                  setError("連線錯誤，請稍後再試");
+                  setLoading(false);
+                }
+              }}
+              onError={() => {
+                setError("Google 登入失敗");
+              }}
+              useOneTap
+            />
+          </div>
         </div>
 
         <div className="mt-8 text-center text-sm text-text-secondary">

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "../../components/Toast";
@@ -8,7 +8,11 @@ export default function UploadProduct() {
   const router = useRouter();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSeller, setIsSeller] = useState(false);
+  const [userTier, setUserTier] = useState(0);
   
   const [formData, setFormData] = useState({
     title: "",
@@ -37,6 +41,11 @@ export default function UploadProduct() {
       .then(data => {
         if (data.role === 'SELLER' || data.role === 'ADMIN') {
           setIsSeller(true);
+          setUserTier(data.tier || 0);
+          if (data.tier < 1 && data.role !== 'ADMIN') {
+            showToast("您需要升級「買賣」帳號才能上架商品", "error");
+            router.push("/profile?tab=upgrade");
+          }
         } else {
           showToast("您沒有賣家權限", "error");
           router.push("/profile");
@@ -63,6 +72,29 @@ export default function UploadProduct() {
     const newUrls = [...mediaUrls];
     newUrls[index] = value;
     setMediaUrls(newUrls);
+  };
+  
+  const handleFileUpload = async (index: number, file: File | undefined) => {
+    if (!file) return;
+    setUploadingIndex(index);
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: form
+      });
+      if (res.ok) {
+        const data = await res.json();
+        handleMediaUrlChange(index, data.url);
+      } else {
+        setError("檔案上傳失敗");
+      }
+    } catch (err) {
+      setError("上傳時發生錯誤");
+    }
+    setUploadingIndex(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const addMediaUrl = () => {
@@ -172,18 +204,36 @@ export default function UploadProduct() {
             
             <div className="space-y-2">
               {mediaUrls.map((url, index) => (
-                <div key={index} className="flex gap-2">
+                <div key={index} className="flex gap-2 items-center">
+                  <div className="relative">
+                    <input 
+                      type="file" 
+                      id={`file-${index}`}
+                      className="hidden"
+                      accept="image/*,video/*"
+                      onChange={(e) => handleFileUpload(index, e.target.files?.[0])}
+                    />
+                    <button
+                      type="button"
+                      disabled={uploadingIndex === index}
+                      onClick={() => document.getElementById(`file-${index}`)?.click()}
+                      className="whitespace-nowrap px-4 py-2 bg-surface-hover text-text-primary rounded-lg font-bold text-sm hover:bg-surface-hover/80 transition-colors"
+                    >
+                      {uploadingIndex === index ? '上傳中...' : '📂 選擇檔案'}
+                    </button>
+                  </div>
+                  <span className="text-text-secondary text-sm">或</span>
                   <input 
                     value={url}
                     onChange={(e) => handleMediaUrlChange(index, e.target.value)}
                     className="flex-1 bg-background border border-surface/50 rounded-lg px-4 py-2 focus:outline-none focus:border-brand" 
-                    placeholder="https://..."
+                    placeholder="輸入圖片/影片網址"
                   />
                   <button 
                     type="button"
                     onClick={() => removeMediaUrl(index)}
                     disabled={mediaUrls.length <= 1}
-                    className="px-3 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
+                    className="px-3 py-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     刪除
                   </button>
@@ -251,16 +301,17 @@ export default function UploadProduct() {
               />
               <span>直購模式</span>
             </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
+            <label className={`flex items-center space-x-2 ${userTier >= 2 ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`} title={userTier < 2 ? "需要解鎖「買賣競標」權限" : ""}>
               <input 
                 type="radio" 
                 name="type" 
                 value="BID" 
                 checked={formData.type === "BID"} 
                 onChange={handleChange}
+                disabled={userTier < 2}
                 className="w-4 h-4 text-brand bg-background border-surface/50"
               />
-              <span className="text-red-500 font-medium">競標模式</span>
+              <span className="text-red-500 font-medium">競標模式 {userTier < 2 && "(未解鎖)"}</span>
             </label>
           </div>
 

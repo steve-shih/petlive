@@ -19,7 +19,17 @@ export default function Cart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [shippingMethod, setShippingMethod] = useState<string>("711");
+  const [shippingDetails, setShippingDetails] = useState({ name: "", phone: "", address: "" });
   const { showToast } = useToast();
+
+  const SHIPPING_OPTIONS = [
+    { id: "711", name: "7-11 店到店", price: 60, icon: "🏪" },
+    { id: "blackcat", name: "黑貓宅急便", price: 130, icon: "🐈‍⬛" },
+    { id: "airforce", name: "空軍一號", price: 200, icon: "✈️" },
+    { id: "inperson", name: "面交自取", price: 0, icon: "🤝" },
+  ];
 
   useEffect(() => {
     const userId = localStorage.getItem("current_user_id");
@@ -63,12 +73,44 @@ export default function Cart() {
     localStorage.setItem("cart", JSON.stringify(newItems));
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
-  const checkout = async () => {
+  const getShippingPrice = () => {
+    return SHIPPING_OPTIONS.find(opt => opt.id === shippingMethod)?.price || 0;
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + getShippingPrice();
+  };
+
+  const handleCheckoutClick = () => {
     if (cartItems.length === 0) return;
+    
+    // Auto-fill details if user is logged in
+    const userId = localStorage.getItem("current_user_id");
+    if (userId) {
+      fetch(`/api/user/${userId}/settings`)
+        .then(res => res.json())
+        .then(data => {
+          setShippingDetails({
+            name: data.name || "",
+            phone: data.phone || "",
+            address: data.sevenElevenStore || data.addressBook?.[0] || ""
+          });
+        })
+        .catch(() => {});
+    }
+    setShowCheckoutModal(true);
+  };
+
+  const submitOrder = async () => {
+    if (!shippingDetails.name || !shippingDetails.phone || !shippingDetails.address) {
+      showToast("請填寫完整的收件資訊", "error");
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -76,10 +118,16 @@ export default function Cart() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          buyer_id: "user_buyer_1", // Hardcoded Mock Buyer
+          buyer_id: currentUserId,
+          shipping_method: shippingMethod,
+          shipping_fee: getShippingPrice(),
+          shipping_details: shippingDetails,
+          total_amount: calculateTotal(),
           items: cartItems.map(item => ({
             product_id: item.product_id,
-            quantity: item.quantity
+            quantity: item.quantity,
+            price: item.price,
+            seller_name: item.seller_name
           }))
         })
       });
@@ -91,6 +139,7 @@ export default function Cart() {
       showToast("結帳成功！訂單已建立。", "success");
       localStorage.removeItem("cart");
       setCartItems([]);
+      setShowCheckoutModal(false);
       router.push("/profile");
     } catch (err) {
       console.error(err);
@@ -164,36 +213,113 @@ export default function Cart() {
             
             <div className="flex justify-between mb-2 text-text-secondary">
               <span>商品總計</span>
-              <span>NT$ {calculateTotal().toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between mb-4 text-text-secondary">
-              <span>運費</span>
-              <span>NT$ 0</span>
+              <span>NT$ {calculateSubtotal().toLocaleString()}</span>
             </div>
             
             <div className="border-t border-surface/50 pt-4 mb-6">
               <div className="flex justify-between items-end">
-                <span className="font-bold">總付款金額</span>
+                <span className="font-bold">不含運小計</span>
                 <span className="text-2xl font-bold text-brand">
-                  NT$ {calculateTotal().toLocaleString()}
+                  NT$ {calculateSubtotal().toLocaleString()}
                 </span>
               </div>
             </div>
             
             <button 
-              onClick={checkout}
+              onClick={handleCheckoutClick}
               disabled={loading}
-              className="w-full bg-brand text-white py-3 rounded-lg font-bold hover:bg-brand/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+              className="w-full bg-brand text-white py-3 rounded-lg font-bold hover:bg-brand/90 transition-colors flex justify-center items-center shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
-              {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : (
-                "確認結帳"
-              )}
+              選擇物流並結帳
             </button>
           </div>
         </div>
       </div>
+
+      {/* Checkout Modal */}
+      {showCheckoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface border border-surface-hover rounded-3xl p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
+            <button 
+              onClick={() => setShowCheckoutModal(false)}
+              className="absolute top-6 right-6 text-text-secondary hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+            
+            <h2 className="text-2xl font-extrabold mb-6">結帳確認</h2>
+            
+            {/* Logistics Selection */}
+            <div className="mb-8">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">📦 選擇配送方式</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {SHIPPING_OPTIONS.map((opt) => (
+                  <div 
+                    key={opt.id}
+                    onClick={() => setShippingMethod(opt.id)}
+                    className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all ${
+                      shippingMethod === opt.id 
+                        ? 'border-brand bg-brand/10 text-brand shadow-md scale-105' 
+                        : 'border-surface-hover bg-background text-text-secondary hover:border-text-secondary'
+                    }`}
+                  >
+                    <span className="text-3xl">{opt.icon}</span>
+                    <span className="font-bold text-sm text-center">{opt.name}</span>
+                    <span className="text-xs">NT$ {opt.price}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recipient Details */}
+            <div className="mb-8 bg-background p-5 rounded-2xl border border-surface/50">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">📝 收件人資訊</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-text-secondary mb-1">姓名</label>
+                  <input type="text" value={shippingDetails.name} onChange={e => setShippingDetails({...shippingDetails, name: e.target.value})} className="w-full bg-surface border border-surface-hover rounded-lg px-4 py-2 focus:border-brand outline-none transition-colors" placeholder="請填寫真實姓名" />
+                </div>
+                <div>
+                  <label className="block text-sm text-text-secondary mb-1">聯絡電話</label>
+                  <input type="text" value={shippingDetails.phone} onChange={e => setShippingDetails({...shippingDetails, phone: e.target.value})} className="w-full bg-surface border border-surface-hover rounded-lg px-4 py-2 focus:border-brand outline-none transition-colors" placeholder="09xx-xxx-xxx" />
+                </div>
+                <div>
+                  <label className="block text-sm text-text-secondary mb-1">
+                    {shippingMethod === '711' ? '7-11 門市店號/店名' : shippingMethod === 'airforce' ? '空軍一號站點' : '詳細地址'}
+                  </label>
+                  <input type="text" value={shippingDetails.address} onChange={e => setShippingDetails({...shippingDetails, address: e.target.value})} className="w-full bg-surface border border-surface-hover rounded-lg px-4 py-2 focus:border-brand outline-none transition-colors" placeholder="請填寫配送目的地" />
+                </div>
+              </div>
+            </div>
+
+            {/* Final Summary */}
+            <div className="border-t border-surface/50 pt-6">
+              <div className="flex justify-between text-text-secondary mb-2">
+                <span>商品小計</span>
+                <span>NT$ {calculateSubtotal().toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-text-secondary mb-4">
+                <span>運費 ({SHIPPING_OPTIONS.find(o => o.id === shippingMethod)?.name})</span>
+                <span>NT$ {getShippingPrice()}</span>
+              </div>
+              <div className="flex justify-between items-end mb-6">
+                <span className="font-bold text-xl">總付款金額</span>
+                <span className="text-3xl font-black text-brand">
+                  NT$ {calculateTotal().toLocaleString()}
+                </span>
+              </div>
+              
+              <button 
+                onClick={submitOrder}
+                disabled={loading}
+                className="w-full bg-brand text-white py-4 rounded-xl font-bold text-lg hover:bg-brand/90 transition-colors flex justify-center items-center shadow-lg"
+              >
+                {loading ? <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div> : "確認結帳並建立訂單"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

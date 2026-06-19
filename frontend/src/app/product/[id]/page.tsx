@@ -10,6 +10,7 @@ interface Bid {
   user_name: string;
   bid_amount: number;
   created_at: string;
+  is_proxy_auto?: boolean;
 }
 
 interface Product {
@@ -39,6 +40,8 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [bidAmount, setBidAmount] = useState<number | "">("");
+  const [isProxy, setIsProxy] = useState(false);
+  const [proxyMax, setProxyMax] = useState<number | "">("");
   const [isFollowing, setIsFollowing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
@@ -181,7 +184,8 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
         body: JSON.stringify({
           product_id: product.id,
           user_id: currentUserId,
-          bid_amount: bidAmount
+          bid_amount: bidAmount,
+          auto_bid_max: isProxy ? proxyMax : 0
         })
       });
       if (!res.ok) {
@@ -308,6 +312,22 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             </Link>
           </div>
 
+          {/* Seller Trust Card */}
+          <div className="flex gap-4 mb-6 bg-background/50 border border-surface/50 p-4 rounded-xl">
+            <div className="flex-1 text-center border-r border-surface/50">
+              <div className="text-sm text-text-secondary">賣家評分</div>
+              <div className="font-bold text-brand text-lg">4.9/5.0</div>
+            </div>
+            <div className="flex-1 text-center border-r border-surface/50">
+              <div className="text-sm text-text-secondary">總成交數</div>
+              <div className="font-bold text-white text-lg">342 件</div>
+            </div>
+            <div className="flex-1 text-center">
+              <div className="text-sm text-text-secondary">出貨速度</div>
+              <div className="font-bold text-green-500 text-lg">極快</div>
+            </div>
+          </div>
+
           <div className="flex items-center text-sm text-text-secondary mb-4 space-x-4 bg-surface p-3 rounded-xl border border-surface/50">
             <div className="flex items-center space-x-1">
               <span className="text-lg">👀</span>
@@ -359,6 +379,19 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               </div>
             ) : product.type === "BID" ? (
               <div className="space-y-4 w-full">
+                {/* Quick Bid Buttons */}
+                <div className="flex gap-2 mb-2">
+                  {[50, 150, 250].map(inc => (
+                    <button
+                      key={inc}
+                      onClick={() => setBidAmount(product.current_price + inc)}
+                      className="flex-1 py-1.5 border border-surface/50 rounded hover:bg-brand/10 hover:border-brand/30 hover:text-brand transition-colors text-sm font-bold text-text-secondary"
+                    >
+                      +{inc}
+                    </button>
+                  ))}
+                </div>
+
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary font-bold">NT$</span>
@@ -373,8 +406,33 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                     onClick={placeBid}
                     className="px-8 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30"
                   >
-                    確認出價
+                    出價
                   </button>
+                </div>
+
+                {/* Proxy Bidding Setup */}
+                <div className="bg-background/50 border border-surface/50 rounded-lg p-3">
+                  <label className="flex items-center space-x-2 cursor-pointer mb-2">
+                    <input 
+                      type="checkbox" 
+                      checked={isProxy} 
+                      onChange={(e) => setIsProxy(e.target.checked)}
+                      className="w-4 h-4 rounded border-surface/50 text-brand focus:ring-brand focus:ring-offset-background"
+                    />
+                    <span className="text-sm font-bold">啟用代理出價 (自動追價)</span>
+                  </label>
+                  {isProxy && (
+                    <div className="relative mt-2">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-sm">最高上限 NT$</span>
+                      <input 
+                        type="number" 
+                        value={proxyMax}
+                        onChange={(e) => setProxyMax(Number(e.target.value))}
+                        placeholder="請輸入您願意出的最高價格"
+                        className="w-full bg-surface border border-surface-hover rounded py-2 pl-28 pr-3 text-sm focus:outline-none focus:border-brand"
+                      />
+                    </div>
+                  )}
                 </div>
                 
                 {/* Bid History */}
@@ -383,8 +441,11 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                     <h4 className="text-sm font-bold mb-2">最新出價紀錄</h4>
                     <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
                       {product.bids.map(bid => (
-                        <div key={bid.id} className="flex justify-between text-sm p-2 bg-background/50 rounded">
-                          <span className="text-text-secondary">{bid.user_name}</span>
+                        <div key={bid.id} className="flex justify-between text-sm p-2 bg-background/50 rounded items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-text-secondary">{bid.user_name}</span>
+                            {bid.is_proxy_auto && <span className="text-[10px] bg-brand/20 text-brand px-1.5 py-0.5 rounded">自動</span>}
+                          </div>
                           <span className="font-bold">NT$ {bid.bid_amount.toLocaleString()}</span>
                         </div>
                       ))}

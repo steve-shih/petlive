@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useToast } from "../../components/Toast";
 
 interface LiveMessage {
@@ -29,35 +28,29 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [roomInfo, setRoomInfo] = useState<any>(null);
   const [isStreamer, setIsStreamer] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>("");
-  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const isStreamerRef = useRef(false);
   const [cameraError, setCameraError] = useState("");
-  const [streamerPeerId, setStreamerPeerId] = useState<string | null>(null);
   const [viewerStatus, setViewerStatus] = useState("等待串流訊號接通...");
   
-  // New states for Zoom and Emojis
+  const [activeRooms, setActiveRooms] = useState<any[]>([]);
+  
   const [videoTrack, setVideoTrack] = useState<MediaStreamTrack | null>(null);
   const [zoomCapabilities, setZoomCapabilities] = useState<{ min: number; max: number; step: number } | null>(null);
   const [zoomValue, setZoomValue] = useState<number>(1);
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmojiData[]>([]);
   
+  // New state for camera switch
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const peerInstance = useRef<any>(null);
   const viewerInitializedRef = useRef<boolean>(false);
-  const roomInfoRef = useRef<any>(null); // Use ref to hold roomInfo for cleanup function
-  const debugLogsRef = useRef<string[]>([]); // Store debug logs to send to new viewers
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const captureIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const recordIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Helper to add debug info and broadcast
-  const addDebug = (msg: string) => {
-    setDebugInfo(prev => prev + '\n' + msg);
-    debugLogsRef.current.push(msg);
-    broadcastData({ type: 'DEBUG', text: msg });
-  };
+  const roomInfoRef = useRef<any>(null);
+  
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  const isSwiping = useRef(false);
 
   const broadcastData = (data: any) => {
     if (peerInstance.current && peerInstance.current.connections) {
@@ -73,128 +66,12 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
 
   const showEmojiLocally = (emoji: string) => {
     const emojiId = Math.random().toString(36).substr(2, 9);
-    const x = Math.random() * 80 + 10; // 10% to 90%
+    const x = Math.random() * 80 + 10;
     setFloatingEmojis(prev => [...prev, { id: emojiId, emoji, x }]);
     setTimeout(() => {
       setFloatingEmojis(prev => prev.filter(e => e.id !== emojiId));
     }, 3000);
   };
-
-  useEffect(() => {
-    const userId = localStorage.getItem("current_user_id");
-    setCurrentUser(userId);
-    
-    if (userId) {
-      fetch(`/api/users/${userId}`, { headers: { "ngrok-skip-browser-warning": "69420" } })
-        .then(res => res.json())
-        .then(data => setCurrentUserRole(data.role))
-        .catch(console.error);
-    }
-    
-    // Fetch room info
-    fetch("/api/live/rooms", { headers: { "ngrok-skip-browser-warning": "69420" } })
-      .then(res => res.json())
-      .then((rooms: any[]) => {
-        const room = rooms.find(r => r.id === id);
-        if (room) {
-          setRoomInfo(room);
-          roomInfoRef.current = room;
-          if (room.streamer_peer_id) {
-            setStreamerPeerId(room.streamer_peer_id);
-          }
-          if (room.streamer_id === userId) {
-            setIsStreamer(true);
-            startCameraAndPeerJS();
-          } else {
-            // viewer logic handled below
-          }
-        } else {
-          showToast("直播間不存在或已結束", "error");
-          router.push("/live");
-        }
-      });
-
-    const loadMessages = () => {
-      // 傳遞 user_id 以便後端檢查是否被踢除
-      fetch(`/api/live/messages?room_id=${id}&user_id=${userId || ''}`, { 
-        cache: 'no-store',
-        headers: { "ngrok-skip-browser-warning": "69420" } 
-      })
-        .then(async (res) => {
-          if (res.status === 403) {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-            showToast("您已被直播主請出房間！", "error");
-            router.push("/live");
-            return;
-          }
-          const data = await res.json();
-          setMessages(data);
-        })
-        .catch(err => console.error(err));
-    };
-
-    const pollRoomInfo = () => {
-      fetch("/api/live/rooms", { 
-        cache: 'no-store',
-        headers: { "ngrok-skip-browser-warning": "69420" } 
-      })
-        .then(res => res.json())
-        .then((rooms: any[]) => {
-          const room = rooms.find(r => r.id === id);
-          if (!room || room.status === 'ENDED') {
-             if (intervalRef.current) clearInterval(intervalRef.current);
-             showToast("直播間已結束！", "info");
-             router.push("/live");
-             return;
-          }
-          if (room) {
-            // 若之前還沒有 peerId，現在抓到了，就啟動 ViewerPeerJS
-            if (room.streamer_peer_id && !viewerInitializedRef.current && room.streamer_id !== userId) {
-              viewerInitializedRef.current = true;
-              setStreamerPeerId(room.streamer_peer_id);
-              startViewerPeerJS(room.streamer_peer_id);
-            }
-          }
-        });
-    };
-
-    loadMessages();
-    intervalRef.current = setInterval(() => {
-      loadMessages();
-      pollRoomInfo();
-    }, 2000);
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // 網頁重新整理或關閉分頁時跳出警告
-      e.preventDefault();
-      e.returnValue = '確定要離開直播間嗎？';
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (captureIntervalRef.current) clearInterval(captureIntervalRef.current);
-      if (recordIntervalRef.current) clearInterval(recordIntervalRef.current);
-      
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      }
-
-      if (videoRef.current && videoRef.current.srcObject) {
-        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-        tracks.forEach(track => track.stop());
-      }
-      if (peerInstance.current) {
-        peerInstance.current.destroy();
-      }
-      // 如果是直播主離開 (上一頁、切換頁面等)，自動結束直播間，避免產生幽靈房間
-      if (userId && roomInfoRef.current?.streamer_id === userId) {
-        // 使用 sendBeacon 確保在網頁關閉時也能送出請求
-        navigator.sendBeacon(`/api/live/rooms/${id}/end`);
-      }
-    };
-  }, [id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -210,10 +87,125 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
       .catch(err => console.error(err));
   };
 
-  const startCameraAndPeerJS = async () => {
+  useEffect(() => {
+    const userId = localStorage.getItem("current_user_id");
+    setCurrentUser(userId);
+    
+    fetch("/api/live/rooms", { headers: { "ngrok-skip-browser-warning": "69420" } })
+      .then(res => res.json())
+      .then((rooms: any[]) => {
+        const active = rooms.filter(r => r.status !== 'ENDED');
+        setActiveRooms(active);
+        const room = active.find(r => r.id === id);
+        if (room) {
+          setRoomInfo(room);
+          roomInfoRef.current = room;
+          if (room.streamer_id === userId) {
+            setIsStreamer(true);
+            isStreamerRef.current = true;
+            startCameraAndPeerJS("user");
+          }
+        } else {
+          showToast("直播間不存在或已結束", "error");
+          router.push("/live");
+        }
+      });
+
+    loadMessages();
+
+    const pollRoomInfo = () => {
+      loadMessages();
+      if (isStreamerRef.current) return;
+      fetch("/api/live/rooms", { cache: 'no-store', headers: { "ngrok-skip-browser-warning": "69420" } })
+        .then(res => res.json())
+        .then((rooms: any[]) => {
+          const room = rooms.find(r => r.id === id);
+          if (!room || room.status === 'ENDED') {
+             showToast("直播間已結束！", "info");
+             router.push("/live");
+             return;
+          }
+          if (room && room.streamer_peer_id && !viewerInitializedRef.current) {
+            viewerInitializedRef.current = true;
+            startViewerPeerJS();
+          }
+        });
+    };
+
+    const intervalId = setInterval(pollRoomInfo, 2000);
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '確定要離開直播間嗎？';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      clearInterval(intervalId);
+      
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+        tracks.forEach(track => track.stop());
+      }
+      if (peerInstance.current) {
+        peerInstance.current.destroy();
+      }
+      // 移除 sendBeacon(/end)，避免 React StrictMode 觸發 unmount 時誤關房間
+      // 依賴 beforeunload 與 explicit 結束按鈕來處理
+    };
+  }, [id]);
+
+  // Handle Swipe Navigation (only on mobile)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.innerWidth >= 768) return; // Disable swipe on desktop
+    if ((e.target as HTMLElement).tagName !== 'VIDEO' && !(e.target as HTMLElement).classList.contains('swipe-layer')) return;
+    touchStartX.current = e.targetTouches[0].clientX;
+    isSwiping.current = true;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isSwiping.current) return;
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!isSwiping.current) return;
+    isSwiping.current = false;
+    if (!touchStartX.current || !touchEndX.current) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > 80;
+    const isRightSwipe = distance < -80;
+    
+    if (isLeftSwipe || isRightSwipe) {
+      if (activeRooms.length === 0) return;
+      const currentIndex = activeRooms.findIndex(r => r.id === id);
+      if (currentIndex === -1) return;
+      
+      let nextIndex = currentIndex;
+      if (isLeftSwipe) {
+        nextIndex = currentIndex + 1;
+      } else {
+        nextIndex = currentIndex - 1;
+      }
+      
+      if (nextIndex >= 0 && nextIndex < activeRooms.length) {
+        const nextRoomId = activeRooms[nextIndex].id;
+        router.push(`/live/${nextRoomId}`);
+      } else {
+        showToast("沒有更多直播囉！", "info");
+      }
+    }
+    
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  const startCameraAndPeerJS = async (mode: "user" | "environment") => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "user" },
+        video: { facingMode: mode },
         audio: true 
       });
       if (videoRef.current) {
@@ -223,7 +215,6 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
       const track = stream.getVideoTracks()[0];
       setVideoTrack(track);
       
-      // Delay checking capabilities as it might not be available immediately on some devices
       setTimeout(() => {
         const caps = track.getCapabilities && track.getCapabilities() as any;
         if (caps && caps.zoom) {
@@ -232,120 +223,53 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
         }
       }, 1000);
 
+      // If already initialized, just replace track and return
+      if (peerInstance.current) {
+        Object.values(peerInstance.current.connections).forEach((conns: any) => {
+          conns.forEach((conn: any) => {
+            const peerConnection = conn.peerConnection;
+            if (peerConnection) {
+              const sender = peerConnection.getSenders().find((s: any) => s.track?.kind === "video");
+              if (sender) sender.replaceTrack(track);
+            }
+          });
+        });
+        return;
+      }
+
       const Peer = (await import('peerjs')).default;
-      const explicitPeerId = `${id}-streamer`;
-      const peer = new Peer(explicitPeerId);
+      const peer = new Peer();
       peerInstance.current = peer;
-      addDebug("[Streamer] Peer instance created");
 
       peer.on('open', (peerId) => {
-        addDebug(`[Streamer] Peer opened with ID: ${peerId}`);
-        // Send peerId to backend so viewers can find it
+        console.log("Streamer Peer ID:", peerId);
         fetch(`/api/live/rooms/${id}/peer`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "69420" },
           body: JSON.stringify({ peer_id: peerId })
-        }).then(async res => {
-          if (!res.ok) {
-             const errorText = await res.text();
-             addDebug(`[Streamer] Fetch failed: ${errorText}`);
-          } else {
-             addDebug(`[Streamer] Backend updated successfully`);
-          }
-        }).catch(err => {
-          addDebug(`[Streamer] Fetch Network Error: ${err.message}`);
-        });
+        }).catch(console.error);
       });
-
-      peer.on('error', (err) => {
-        addDebug(`[Streamer] Peer Error: ${err.type} - ${err.message}`);
-      });
-      
-      // Thumbnail Capture Logic (every 1 minute for demo)
-      captureIntervalRef.current = setInterval(() => {
-        if (videoRef.current) {
-          const canvas = document.createElement("canvas");
-          canvas.width = 640;
-          canvas.height = 480;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-             ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-             const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-             fetch(`/api/live/rooms/${id}/thumbnail`, {
-               method: "POST",
-               headers: { "Content-Type": "application/json" },
-               body: JSON.stringify({ thumbnail: dataUrl })
-             }).catch(err => console.error("Thumbnail update failed", err));
-          }
-        }
-      }, 60000);
-
-      // MediaRecorder Logic
-      let chunks: Blob[] = [];
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        if (chunks.length > 0) {
-          const blob = new Blob(chunks, { type: 'video/webm' });
-          chunks = [];
-          
-          const formData = new FormData();
-          formData.append('video', blob, 'record.webm');
-          formData.append('room_id', id);
-          formData.append('user_id', currentUser || localStorage.getItem('current_user_id') || '');
-          
-          fetch('/api/live/upload-record', {
-            method: 'POST',
-            body: formData
-          }).then(res => res.json()).then(data => {
-            addDebug(`[Streamer] Record uploaded: ${data.message || data.error}`);
-          }).catch(err => {
-            addDebug(`[Streamer] Record upload failed: ${err.message}`);
-          });
-          
-          // Restart recording if stream is still active
-          if (videoRef.current && videoRef.current.srcObject) {
-            mediaRecorder.start();
-          }
-        }
-      };
-
-      mediaRecorder.start();
-      
-      // Stop and restart recording every 30 minutes to split files
-      recordIntervalRef.current = setInterval(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-          mediaRecorderRef.current.stop(); // This triggers onstop, which handles upload and restart
-        }
-      }, 30 * 60 * 1000);
 
       const activeCalls: Record<string, any> = {};
 
-      // When viewer connects, call them with the stream
       peer.on('connection', (conn) => {
-        addDebug(`[Streamer] Viewer connected: ${conn.peer}`);
-        conn.on('open', () => {
-           // Send past debug logs to the newly connected viewer
-           conn.send({ type: 'DEBUG_HISTORY', logs: debugLogsRef.current });
-        });
         conn.on('data', (data: any) => {
-          if (data === 'VIEWER_READY') {
-            addDebug(`[Streamer] Viewer Ready. Calling viewer...`);
-            const call = peer.call(conn.peer, stream);
-            activeCalls[conn.peer] = call;
+            if (data === 'VIEWER_READY') {
+            const capacity = roomInfoRef.current?.layer_0_capacity || 4;
+            if (Object.keys(activeCalls).length < capacity) {
+                // Ensure we call with the LATEST stream
+                const currentStream = videoRef.current?.srcObject as MediaStream || stream;
+                const call = peer.call(conn.peer, currentStream);
+                activeCalls[conn.peer] = call;
+            } else {
+                conn.send({ type: 'REJECT_FULL' });
+            }
           } else if (data && data.type === 'EMOJI') {
             showEmojiLocally(data.emoji);
-            // Broadcast to other viewers
             broadcastData({ type: 'EMOJI', emoji: data.emoji });
           }
         });
         conn.on('close', () => {
-          addDebug(`[Streamer] Viewer disconnected: ${conn.peer}`);
           if (activeCalls[conn.peer]) {
             activeCalls[conn.peer].close();
             delete activeCalls[conn.peer];
@@ -356,71 +280,170 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
     } catch (err: any) {
       console.error("Camera error:", err);
       setCameraError("無法取得相機權限，請確認瀏覽器授權。");
-      addDebug(`[Streamer] Fatal Error: ${err.message}`);
     }
   };
 
-  const startViewerPeerJS = async (hostPeerId: string | undefined) => {
-    if (!hostPeerId) {
-      setViewerStatus("直播主準備中，請稍候再重新整理...");
-      return;
+  const switchCamera = () => {
+    if (!isStreamer) return;
+    const newMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(newMode);
+    
+    // Stop current track
+    if (videoTrack) {
+       videoTrack.stop();
     }
+    
+    startCameraAndPeerJS(newMode);
+  };
+
+  const startViewerPeerJS = async () => {
     try {
       const Peer = (await import('peerjs')).default;
-      const explicitPeerId = `${id}-viewer-${currentUser || Math.random().toString(36).substring(2, 9)}`;
-      const peer = new Peer(explicitPeerId);
+      const peer = new Peer();
       peerInstance.current = peer;
+      
+      let myStream: MediaStream | null = null;
+      const activeCalls: Record<string, any> = {};
 
-      peer.on('open', () => {
-        setViewerStatus("連線中...");
-        addDebug("[Viewer] Peer opened");
-        // Signal streamer to call us back robustly via data channel
-        const conn = peer.connect(hostPeerId);
-        conn.on('open', () => {
-          addDebug("[Viewer] DataChannel open, sending VIEWER_READY");
-          conn.send('VIEWER_READY');
-        });
-        conn.on('data', (data: any) => {
-          if (data && data.type === 'DEBUG') {
-            setDebugInfo(prev => prev + '\n' + data.text);
-          } else if (data && data.type === 'DEBUG_HISTORY') {
-             setDebugInfo(prev => prev + '\n' + data.logs.join('\n'));
-          }
-        });
+      peer.on('open', (myPeerId) => {
+        setViewerStatus("正在分配節點...");
+        
+        const connectToParent = (targetPeerId: string) => {
+          setViewerStatus("連線中...");
+          const conn = peer.connect(targetPeerId);
+          
+          let isReconnecting = false;
+          const handleDisconnect = () => {
+             if (isReconnecting) return;
+             isReconnecting = true;
+             setViewerStatus("連線中斷，重新尋找節點...");
+             fetch(`/api/live/rooms/${id}/report_dead`, {
+                 method: "POST",
+                 headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "69420" },
+                 body: JSON.stringify({ dead_peer_id: targetPeerId })
+             }).then(() => {
+                 fetch(`/api/live/rooms/${id}/join`, {
+                     method: "POST",
+                     headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "69420" },
+                     body: JSON.stringify({ peer_id: myPeerId })
+                 })
+                 .then(r => r.json())
+                 .then(resData => {
+                     if (resData.parent_peer_id) {
+                         connectToParent(resData.parent_peer_id);
+                     } else {
+                         setViewerStatus("無法重新連線，伺服器可能滿載");
+                     }
+                 }).catch(() => setViewerStatus("無法重新連線"));
+             });
+          };
+
+          conn.on('open', () => {
+            conn.send('VIEWER_READY');
+          });
+          
+          conn.on('close', handleDisconnect);
+          conn.on('error', handleDisconnect);
+
+          conn.on('data', (data: any) => {
+             if (data && data.type === 'EMOJI') {
+                 showEmojiLocally(data.emoji);
+             } else if (data && data.type === 'REJECT_FULL') {
+                 setViewerStatus("上層節點已滿，尋找新節點...");
+                 fetch(`/api/live/rooms/${id}/join`, {
+                     method: "POST",
+                     headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "69420" },
+                     body: JSON.stringify({ peer_id: myPeerId })
+                 })
+                 .then(r => r.json())
+                 .then(resData => {
+                     if (resData.parent_peer_id) {
+                         connectToParent(resData.parent_peer_id);
+                     }
+                 });
+             }
+          });
+        };
+
+        // 取得自身 ID 後，才向後端分配節點
+        fetch(`/api/live/rooms/${id}/join`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "69420" },
+            body: JSON.stringify({ peer_id: myPeerId })
+        })
+        .then(res => res.json())
+        .then(joinData => {
+             if (joinData.parent_peer_id) {
+                 connectToParent(joinData.parent_peer_id);
+             } else {
+                 setViewerStatus("無法分配節點：" + (joinData.error || "未知錯誤"));
+             }
+        })
+        .catch(err => setViewerStatus("節點分配請求失敗"));
       });
 
       peer.on('call', (call) => {
         setViewerStatus("接收影像中...");
-        addDebug("[Viewer] Receiving call from streamer");
-        call.answer(); // Answer without sending our own stream
+        call.answer(); 
         call.on('stream', (remoteStream) => {
-          addDebug("[Viewer] Stream received");
+          myStream = remoteStream;
           if (videoRef.current) {
             videoRef.current.srcObject = remoteStream;
-            setViewerStatus(""); // Clear status when stream arrives
-            videoRef.current.play().catch(e => console.log("Autoplay blocked:", e));
+            setViewerStatus(""); 
+            videoRef.current.play().catch(e => {
+                console.log("Autoplay blocked:", e);
+                setViewerStatus("畫面已暫停 (請點擊畫面播放聲音與影像)");
+            });
           }
         });
       });
+      
+      peer.on('connection', (conn) => {
+        conn.on('data', (data: any) => {
+          if (data === 'VIEWER_READY' && myStream) {
+            const capacity = roomInfoRef.current?.layer_n_capacity || 4;
+            if (Object.keys(activeCalls).length < capacity) {
+                const call = peer.call(conn.peer, myStream);
+                activeCalls[conn.peer] = call;
+            } else {
+                conn.send({ type: 'REJECT_FULL' });
+            }
+          } else if (data && data.type === 'EMOJI') {
+            showEmojiLocally(data.emoji);
+            broadcastData({ type: 'EMOJI', emoji: data.emoji });
+          }
+        });
+        conn.on('close', () => {
+          if (activeCalls[conn.peer]) {
+            activeCalls[conn.peer].close();
+            delete activeCalls[conn.peer];
+          }
+        });
+      });
+
     } catch (err) {
       console.error("PeerJS viewer error:", err);
       setViewerStatus("連線發生錯誤");
     }
   };
 
+  const endLive = async () => {
+    if (confirm("確定要退出直播嗎？")) {
+      if (isStreamer) {
+        await fetch(`/api/live/rooms/${id}/end`, { headers: { "ngrok-skip-browser-warning": "69420" }, method: "POST" });
+      }
+      router.push("/live");
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !currentUser) return;
-
     try {
       await fetch("/api/live/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "69420" },
-        body: JSON.stringify({
-          room_id: id,
-          sender_id: currentUser,
-          message_text: inputText
-        })
+        body: JSON.stringify({ room_id: id, sender_id: currentUser, message_text: inputText })
       });
       setInputText("");
       loadMessages();
@@ -429,28 +452,15 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
     }
   };
 
-  const endLive = async () => {
-    if (confirm("確定要結束直播嗎？")) {
-      await fetch(`/api/live/rooms/${id}/end`, { headers: { "ngrok-skip-browser-warning": "69420" }, method: "POST" });
-      router.push("/live");
+  const handleVideoClick = () => {
+    if (viewerStatus && viewerStatus.includes("請點擊畫面")) {
+      videoRef.current?.play().then(() => {
+        setViewerStatus("");
+      }).catch(console.error);
     }
   };
 
-  const kickUser = async (targetUserId: string, targetName: string) => {
-    if (confirm(`確定要將「${targetName}」踢出直播間嗎？踢出後該買家將無法再次進入。`)) {
-      try {
-        await fetch(`/api/live/rooms/${id}/kick`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "69420" },
-          body: JSON.stringify({ user_id: targetUserId })
-        });
-      } catch (err) {
-        console.error("Kick failed:", err);
-      }
-    }
-  };
-
-  if (!roomInfo) return <div className="p-10 text-center">載入中...</div>;
+  if (!roomInfo) return <div className="p-10 text-center w-full h-screen bg-black text-white flex items-center justify-center">載入中...</div>;
 
   return (
     <>
@@ -464,32 +474,34 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
         position: absolute;
         bottom: 20%;
         animation: floatUp 3s ease-out forwards;
-        font-size: 2rem;
+        font-size: 3rem;
         pointer-events: none;
-        z-index: 40;
+        z-index: 50;
+      }
+      .chat-mask {
+        mask-image: linear-gradient(to bottom, transparent, black 15%);
+        -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%);
+      }
+      .md-chat-mask-none {
+        mask-image: none !important;
+        -webkit-mask-image: none !important;
       }
     `}} />
-    <div className="w-full h-[calc(100dvh-5rem)] md:max-w-7xl mx-auto flex flex-col md:flex-row md:gap-6 md:p-4">
+    
+    <div 
+      className="absolute md:relative inset-0 w-full h-full md:max-w-7xl md:mx-auto md:p-6 flex flex-col md:flex-row gap-6 bg-black md:bg-transparent overflow-hidden md:overflow-visible touch-none md:touch-auto swipe-layer"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Floating Emojis (Only inside Video Container) */}
       
-      {/* Left: Video Stream - Fixed height on mobile */}
-      <div className="w-full h-[40vh] md:h-full md:flex-1 flex flex-col bg-black md:rounded-2xl overflow-hidden shadow-lg relative flex-shrink-0">
-        <div className="absolute top-4 left-4 z-10 flex flex-col space-y-2">
-          <div className="flex items-center space-x-2">
-            <span className="bg-red-500 text-white px-3 py-1 rounded text-sm font-bold animate-pulse">LIVE</span>
-            <span className="bg-black/50 text-white px-3 py-1 rounded text-sm truncate max-w-[200px]">{roomInfo.title}</span>
-          </div>
-          <div className="bg-black/50 text-white px-3 py-1 rounded text-xs w-fit">
-            直播主：<span className="font-bold text-red-400">{roomInfo.streamer_name}</span>
-          </div>
-          {debugInfo && currentUserRole === 'ADMIN' && (
-             <div className="bg-black/80 text-green-400 p-2 rounded text-xs w-fit whitespace-pre-wrap max-h-32 overflow-y-auto z-50 pointer-events-auto">
-               <div className="font-bold text-yellow-400 mb-1">🛠️ ADMIN DEBUG MODE</div>
-               {debugInfo}
-             </div>
-          )}
-        </div>
-
-        {/* Floating Emojis Layer */}
+      {/* Video Container (Full screen on mobile, Rounded box on Desktop) */}
+      <div 
+        className="relative flex-1 w-full h-full md:rounded-3xl overflow-hidden md:shadow-[0_0_40px_rgba(255,0,0,0.15)] md:border md:border-surface/50 bg-black z-0"
+        onClick={handleVideoClick}
+      >
+        
         {floatingEmojis.map((emojiData) => (
           <div 
             key={emojiData.id} 
@@ -499,30 +511,29 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
             {emojiData.emoji}
           </div>
         ))}
-        
+
         {isStreamer ? (
           <>
             {cameraError ? (
-              <div className="flex-1 flex items-center justify-center text-white/50 p-6 text-center">
+              <div className="absolute inset-0 flex items-center justify-center text-white/50 p-6 text-center z-0">
                 {cameraError}
               </div>
             ) : (
               <video 
                 ref={videoRef} 
                 autoPlay 
-                muted // Mute self to prevent feedback loop
+                muted 
                 playsInline
-                className="w-full h-full object-cover"
+                className={`absolute inset-0 w-full h-full object-cover z-0 pointer-events-none ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
               />
             )}
             
-            {/* Streamer Camera Zoom Slider */}
             {zoomCapabilities && (
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 p-3 rounded-2xl flex flex-col items-center space-y-2">
-                <span className="text-white text-xs font-bold">🔍 縮放</span>
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 backdrop-blur p-3 rounded-full flex flex-col items-center space-y-2 border border-white/10 hidden md:flex">
+                <span className="text-white text-xs font-bold">🔍</span>
                 <input 
                   type="range" 
-                  orient="vertical"
+                  {...{"orient": "vertical"}}
                   className="h-32 appearance-none bg-white/20 rounded-full w-2"
                   min={zoomCapabilities.min} 
                   max={zoomCapabilities.max} 
@@ -539,13 +550,6 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
                 />
               </div>
             )}
-
-            <button 
-              onClick={endLive}
-              className="absolute bottom-6 right-6 bg-red-500 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-red-600 transition-colors z-20"
-            >
-              結束直播
-            </button>
           </>
         ) : (
           <>
@@ -553,92 +557,105 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
               ref={videoRef} 
               autoPlay 
               playsInline
-              controls // Allow viewer to control volume or fullscreen
-              className={`w-full h-full object-cover ${viewerStatus ? 'hidden' : 'block'}`}
+              className={`absolute inset-0 w-full h-full object-cover z-0 pointer-events-none ${viewerStatus ? 'hidden' : 'block'}`}
             />
             {viewerStatus && (
-              <div className="w-full h-full flex flex-col items-center justify-center text-white/50 bg-surface/10">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 bg-black z-0">
                 <div className="text-6xl mb-4 animate-bounce">📺</div>
-                <p>{viewerStatus}</p>
-                <p className="text-sm mt-2">（WebRTC 點對點連線中）</p>
-              </div>
-            )}
-
-            {/* Viewer Emoji Buttons */}
-            {!viewerStatus && currentUser && (
-              <div className="absolute bottom-6 right-4 z-20 flex flex-col space-y-3">
-                {['❤️', '👍', '😂', '😲'].map(emoji => (
-                  <button 
-                    key={emoji}
-                    onClick={() => {
-                       showEmojiLocally(emoji);
-                       broadcastData({ type: 'EMOJI', emoji });
-                    }}
-                    className="w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl hover:bg-black/70 hover:scale-110 active:scale-90 transition-all shadow-lg border border-white/10"
-                  >
-                    {emoji}
-                  </button>
-                ))}
+                <p className="font-bold">{viewerStatus}</p>
+                <p className="text-xs mt-2 opacity-50 md:hidden">向左/右滑動可切換房間</p>
               </div>
             )}
           </>
         )}
+
+        {/* Header Streamer Info & Controls */}
+        <div className="absolute top-0 left-0 right-0 flex justify-between items-start p-4 pointer-events-auto bg-gradient-to-b from-black/80 to-transparent z-10">
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs font-bold animate-pulse">LIVE</span>
+              <span className="text-white font-bold text-sm md:text-lg drop-shadow-md">{roomInfo.title}</span>
+            </div>
+            <span className="text-white/80 text-xs md:text-sm drop-shadow">直播主：{roomInfo.streamer_name}</span>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            {isStreamer && (
+              <button 
+                onClick={switchCamera}
+                className="w-10 h-10 bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors shadow-lg"
+                title="切換鏡頭"
+              >
+                🔄
+              </button>
+            )}
+            <button 
+              onClick={endLive}
+              className="w-10 h-10 bg-black/40 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-red-500/80 transition-colors shadow-lg"
+              title="離開直播"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Right: Group Chat - Takes remaining height on mobile */}
-      <div className="flex-1 w-full md:w-[350px] bg-surface flex flex-col border-t md:border border-surface/50 shadow-sm md:rounded-2xl overflow-hidden mb-16 md:mb-0">
-        <div className="p-4 border-b border-surface/50 font-bold bg-background/50 flex justify-between items-center flex-shrink-0">
-          <span>百人群組聊天室</span>
-          <span className="text-xs bg-brand/10 text-brand px-2 py-1 rounded-full">即時更新</span>
-        </div>
+      {/* Chat Container (Overlay on mobile, Sidebar on desktop) */}
+      <div className="absolute md:relative bottom-0 left-0 right-0 md:w-[380px] md:h-full flex flex-col justify-end md:justify-between z-10 pointer-events-none md:pointer-events-auto md:bg-surface md:border md:border-surface/50 md:rounded-3xl md:shadow-xl overflow-hidden pb-4 md:pb-0">
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24 md:pb-4">
+        {/* Messages List */}
+        <div className="overflow-y-auto max-h-[40vh] md:max-h-none md:flex-1 p-4 pointer-events-auto chat-mask md:md-chat-mask-none flex flex-col gap-2">
           {messages.map(msg => (
-            <div key={msg.id} className="text-sm flex items-start group">
-              <div className="flex-1">
-                <span className={`font-bold mr-2 ${msg.sender_id === roomInfo.streamer_id ? 'text-red-500' : 'text-brand'}`}>
-                  {msg.sender_id === roomInfo.streamer_id && "🎤 "}{msg.sender_name}
-                  {msg.sender_id === roomInfo.streamer_id && <span className="ml-1 text-[10px] bg-red-100 text-red-600 px-1 py-0.5 rounded border border-red-200">直播主</span>}:
-                </span>
-                <span className="text-text-primary break-all">{msg.message_text}</span>
-              </div>
-              {isStreamer && msg.sender_id !== currentUser && (
-                <button 
-                  onClick={() => kickUser(msg.sender_id, msg.sender_name)}
-                  className="opacity-0 group-hover:opacity-100 ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded shadow hover:bg-red-600 transition-opacity flex-shrink-0"
-                >
-                  踢出
-                </button>
-              )}
+            <div key={msg.id} className="md:bg-background/50 md:p-3 md:rounded-xl text-white md:text-text-primary text-[13px] md:text-sm leading-snug drop-shadow-md md:drop-shadow-none">
+              <span className={`font-bold mr-1.5 ${msg.sender_id === roomInfo.streamer_id ? 'text-red-400 md:text-red-500' : 'text-brand-light md:text-brand drop-shadow-[0_0_2px_rgba(255,255,255,0.8)] md:drop-shadow-none'}`}>
+                {msg.sender_id === roomInfo.streamer_id && "🎤 "}{msg.sender_name}
+              </span>
+              <span className="text-white/95 md:text-text-primary">{msg.message_text}</span>
             </div>
           ))}
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} className="h-1 flex-shrink-0" />
         </div>
-        
-        <form onSubmit={sendMessage} className="p-3 border-t border-surface/50 bg-background/50 flex gap-2 flex-shrink-0 absolute bottom-16 md:static w-full">
+
+        {/* Input & Emoji Bar */}
+        <div className="p-4 pt-2 pointer-events-auto md:bg-surface md:border-t md:border-surface/50 flex items-center gap-3">
           {currentUser ? (
-            <>
+            <form onSubmit={sendMessage} className="flex-1 flex gap-2">
               <input
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="參與討論..."
-                className="flex-1 bg-background border border-surface/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand"
+                placeholder="參與聊天..."
+                className="flex-1 bg-black/40 md:bg-background backdrop-blur-md md:backdrop-blur-none border border-white/20 md:border-surface-hover text-white md:text-text-primary rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-brand shadow-lg md:shadow-none"
               />
               <button 
                 type="submit"
                 disabled={!inputText.trim()}
-                className="bg-brand text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50"
+                className="bg-brand text-white px-4 py-2.5 rounded-full text-sm font-bold disabled:opacity-50 shadow-lg md:shadow-none hover:bg-brand-hover transition-colors"
               >
-                發送
+                送出
               </button>
-            </>
+            </form>
           ) : (
-            <div className="w-full text-center text-sm text-text-secondary py-2">
-              請先登入才能參與聊天
+            <div className="flex-1 bg-black/40 md:bg-background border border-white/20 md:border-surface-hover rounded-full px-4 py-2.5 text-sm text-white/50 md:text-text-secondary text-center">
+              請登入後參與聊天
             </div>
           )}
-        </form>
+
+          {/* Emoji Button */}
+          {(!viewerStatus || isStreamer) && currentUser && (
+            <button 
+              onClick={() => {
+                 showEmojiLocally('❤️');
+                 broadcastData({ type: 'EMOJI', emoji: '❤️' });
+              }}
+              className="w-10 h-10 flex-shrink-0 bg-black/40 md:bg-background backdrop-blur-md md:backdrop-blur-none border border-white/20 md:border-surface-hover rounded-full flex items-center justify-center text-xl hover:scale-110 active:scale-90 transition-all shadow-lg md:shadow-none"
+              title="發送愛心"
+            >
+              ❤️
+            </button>
+          )}
+        </div>
+
       </div>
 
     </div>
