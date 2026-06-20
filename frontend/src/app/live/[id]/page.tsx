@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/Toast";
+import MeshTreeVisualizer from '@/app/components/MeshTreeVisualizer';
 
 interface LiveMessage {
   id: string;
@@ -28,7 +29,10 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [roomInfo, setRoomInfo] = useState<any>(null);
   const [isStreamer, setIsStreamer] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showTree, setShowTree] = useState(false);
   const isStreamerRef = useRef(false);
+  const lastStatsRef = useRef({ bytes: 0, timestamp: 0 });
   const [cameraError, setCameraError] = useState("");
   const [viewerStatus, setViewerStatus] = useState("等待串流訊號接通...");
   
@@ -51,6 +55,9 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const isSwiping = useRef(false);
+  const parentCallRef = useRef<any>(null);
+  const activeCallsRef = useRef<any>({});
+  const layerRef = useRef(0);
 
   const broadcastData = (data: any) => {
     if (peerInstance.current && peerInstance.current.connections) {
@@ -83,7 +90,69 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
       headers: { "ngrok-skip-browser-warning": "69420" } 
     })
       .then(res => res.json())
-      .then(data => setMessages(data))
+      .then(data => {
+        const chatMessages = data.filter((msg: any) => {
+          if (msg.sender_id === 'SYSTEM') {
+            try {
+              const sys = JSON.parse(msg.content);
+              if (sys.type === 'SWAP_PARENT' && sys.target === peerInstance.current?.id) {
+                if (sys.new_parent && sys.new_parent !== parentCallRef.current?.peer) {
+                  console.log("🔥 Received SWAP_PARENT command. Reconnecting to new parent:", sys.new_parent);
+                  showToast("系統已為您重新分配連線節點", "info");
+                  
+                  if (parentCallRef.current) {
+                    parentCallRef.current.close();
+                  }
+                  
+                  // 直接連線到新父母
+                  const connectToParent = (parentId: string) => {
+                    const peer = peerInstance.current;
+                    if (!peer) return;
+                    
+                    const call = peer.call(parentId, new MediaStream());
+                    parentCallRef.current = call;
+                    
+                    call.on('stream', (remoteStream: any) => {
+                      if (videoRef.current && remoteStream.getVideoTracks().length > 0) {
+                        videoRef.current.srcObject = remoteStream;
+                        setViewerStatus("");
+                      }
+                      
+                      Object.values(activeCallsRef.current).forEach((childCall: any) => {
+                        if (childCall.peerConnection) {
+                           const sender = childCall.peerConnection.getSenders().find((s: any) => s.track?.kind === 'video');
+                           if (sender && remoteStream.getVideoTracks()[0]) {
+                               sender.replaceTrack(remoteStream.getVideoTracks()[0]);
+                           }
+                        }
+                      });
+                    });
+                    
+                    call.on('close', () => {
+                      if (peerInstance.current && !peerInstance.current.destroyed) {
+                         // Fallback to auto join if the assigned parent dies
+                         showToast("上游節點已離線，自動重連中...", "info");
+                         fetch(`/api/live/rooms/${id}/join`, {
+                           method: 'POST',
+                           headers: { 'Content-Type': 'application/json', "ngrok-skip-browser-warning": "69420" },
+                           body: JSON.stringify({ peer_id: peer.id })
+                         }).then(r => r.json()).then(d => {
+                           if (d.parent_id) connectToParent(d.parent_id);
+                         });
+                      }
+                    });
+                  };
+                  
+                  connectToParent(sys.new_parent);
+                }
+              }
+            } catch (e) {}
+            return false;
+          }
+          return true;
+        });
+        setMessages(chatMessages);
+      })
       .catch(err => console.error(err));
   };
 
@@ -110,6 +179,16 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
           router.push("/live");
         }
       });
+      
+    if (userId) {
+      fetch(`/api/users/${userId}`, { headers: { "ngrok-skip-browser-warning": "69420" } })
+        .then(res => res.json())
+        .then(data => {
+          if (data.role === 'ADMIN' || localStorage.getItem("admin_user_id")) {
+            setIsAdmin(true);
+          }
+        }).catch(console.error);
+    }
 
     loadMessages();
 
@@ -132,7 +211,69 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
         });
     };
 
-    const intervalId = setInterval(pollRoomInfo, 2000);
+    pollRoomInfo();
+    const infoInterval = setInterval(pollRoomInfo, 2000);
+    
+    // WebRTC Stats Monitoring
+    const statsInterval = setInterval(async () => {
+      if (!peerInstance.current) return;
+      let bitrate = 0;
+      let ping = 0;
+      
+      // Calculate inbound speed from parent (Download) or outbound speed (Streamer)
+      let pc = parentCallRef.current?.peerConnection;
+      if (isStreamerRef.current) {
+        // Find the first active child connection to measure upload ping
+        const firstCall = Object.values(activeCallsRef.current)[0] as any;
+        if (firstCall) pc = firstCall.peerConnection;
+      }
+      
+      if (pc) {
+        try {
+          const stats = await pc.getStats();
+          let bytesNow = 0;
+          let timestampNow = 0;
+          
+          stats.forEach((report: any) => {
+            if ((report.type === 'inbound-rtp' || report.type === 'outbound-rtp') && report.kind === 'video') {
+              bytesNow = report.bytesReceived || report.bytesSent || 0;
+              timestampNow = report.timestamp;
+            }
+            if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+              ping = Math.round(report.currentRoundTripTime * 1000) || 0;
+            }
+          });
+          
+          if (bytesNow > 0 && lastStatsRef.current.bytes > 0) {
+            const bytesDelta = bytesNow - lastStatsRef.current.bytes;
+            const timeDelta = timestampNow - lastStatsRef.current.timestamp;
+            if (timeDelta > 0) {
+              bitrate = Math.round((bytesDelta * 8) / timeDelta); // kbps
+            }
+          }
+          
+          lastStatsRef.current = { bytes: bytesNow, timestamp: timestampNow };
+          
+          // Drop children if network is bad (ping > 300 or bitrate < 100)
+          if (ping > 300 && !isStreamerRef.current) {
+             Object.values(activeCallsRef.current).forEach((c: any) => {
+                 if (c && typeof c.close === 'function') c.close();
+             });
+          }
+          
+        } catch (e) {}
+      }
+      
+      fetch(`/api/live/rooms/${id}/report_stats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', "ngrok-skip-browser-warning": "69420" },
+        body: JSON.stringify({
+          peer_id: peerInstance.current.id,
+          bitrate_kbps: bitrate,
+          ping_ms: ping
+        })
+      }).catch(() => {});
+    }, 3000);
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -142,8 +283,8 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      clearInterval(intervalId);
-      
+      clearInterval(infoInterval);
+      clearInterval(statsInterval);
       if (videoRef.current && videoRef.current.srcObject) {
         const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
         tracks.forEach(track => track.stop());
@@ -151,14 +292,11 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
       if (peerInstance.current) {
         peerInstance.current.destroy();
       }
-      // 移除 sendBeacon(/end)，避免 React StrictMode 觸發 unmount 時誤關房間
-      // 依賴 beforeunload 與 explicit 結束按鈕來處理
     };
   }, [id]);
 
-  // Handle Swipe Navigation (only on mobile)
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.innerWidth >= 768) return; // Disable swipe on desktop
+    if (window.innerWidth >= 768) return; 
     if ((e.target as HTMLElement).tagName !== 'VIDEO' && !(e.target as HTMLElement).classList.contains('swipe-layer')) return;
     touchStartX.current = e.targetTouches[0].clientX;
     isSwiping.current = true;
@@ -226,7 +364,6 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
         }
       }, 1000);
 
-      // If already initialized, just replace track and return
       if (peerInstance.current) {
         Object.values(peerInstance.current.connections).forEach((conns: any) => {
           conns.forEach((conn: any) => {
@@ -288,7 +425,6 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
             if (data === 'VIEWER_READY') {
             const capacity = roomInfoRef.current?.layer_0_capacity || 4;
             if (Object.keys(activeCalls).length < capacity) {
-                // Ensure we call with the LATEST stream
                 const currentStream = videoRef.current?.srcObject as MediaStream || stream;
                 const call = peer.call(conn.peer, currentStream);
                 activeCalls[conn.peer] = call;
@@ -335,12 +471,9 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
     if (!isStreamer) return;
     const newMode = facingMode === "user" ? "environment" : "user";
     setFacingMode(newMode);
-    
-    // Stop current track
     if (videoTrack) {
        videoTrack.stop();
     }
-    
     startCameraAndPeerJS(newMode);
   };
 
@@ -365,6 +498,7 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
       
       let myStream: MediaStream | null = null;
       const activeCalls: Record<string, any> = {};
+      activeCallsRef.current = activeCalls;
 
       const connectToParent = (targetPeerId: string) => {
         setViewerStatus("連線中...");
@@ -434,6 +568,7 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
         .then(res => res.json())
         .then(joinData => {
              if (joinData.parent_peer_id) {
+                 if (joinData.layer !== undefined) layerRef.current = joinData.layer;
                  connectToParent(joinData.parent_peer_id);
              } else {
                  setViewerStatus("無法分配節點：" + (joinData.error || "未知錯誤"));
@@ -455,11 +590,30 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
       peer.on('call', (call) => {
         setViewerStatus("接收影像中...");
         call.answer(); 
+        parentCallRef.current = call;
         call.on('stream', (remoteStream) => {
           myStream = remoteStream;
           if (videoRef.current) {
             videoRef.current.srcObject = remoteStream;
             setViewerStatus(""); 
+            
+            // Apply WebRTC Playout Delay Hint for Layer Sync
+            if (roomInfoRef.current && layerRef.current > 0) {
+              const base = roomInfoRef.current.base_delay || 1000;
+              const step = roomInfoRef.current.layer_delay || 300;
+              let delayMs = base - ((layerRef.current - 1) * step);
+              if (delayMs < 0) delayMs = 0;
+              
+              if (call.peerConnection) {
+                const receivers = call.peerConnection.getReceivers();
+                receivers.forEach((receiver: any) => {
+                  if ('playoutDelayHint' in receiver) {
+                    receiver.playoutDelayHint = delayMs / 1000;
+                  }
+                });
+              }
+            }
+            
             videoRef.current.play().catch(e => {
                 console.log("Autoplay blocked:", e);
                 setViewerStatus("畫面已暫停 (請點擊畫面播放聲音與影像)");
@@ -567,7 +721,6 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Phone-sized Container for Desktop & Fullscreen for Mobile */}
       <div 
         className="relative w-full h-full md:max-w-[480px] bg-black z-0 flex flex-col overflow-hidden md:border-x md:border-surface/50 shadow-2xl"
       >
@@ -640,7 +793,6 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
           )}
         </div>
 
-        {/* Header Streamer Info & Controls */}
         <div className="absolute top-0 left-0 right-0 flex justify-between items-start p-4 pointer-events-none bg-gradient-to-b from-black/80 via-black/40 to-transparent z-10 pt-safe-top">
           <div className="flex flex-col space-y-1 pointer-events-auto">
             <div className="flex items-center space-x-2">
@@ -651,6 +803,15 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
           </div>
           
           <div className="flex items-center space-x-3 pointer-events-auto">
+            {(isStreamer || isAdmin) && (
+              <button
+                onClick={() => setShowTree(true)}
+                className="w-10 h-10 bg-indigo-500/80 backdrop-blur-md rounded-full flex items-center justify-center text-white shadow-lg"
+                title="網路拓樸"
+              >
+                📊
+              </button>
+            )}
             {isStreamer && (
               <button 
                 onClick={switchCamera}
@@ -670,10 +831,7 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
           </div>
         </div>
 
-        {/* Chat Container (Overlay Bottom) */}
         <div className="absolute bottom-0 left-0 right-0 h-[50vh] flex flex-col justify-end z-10 pointer-events-none pb-safe">
-          
-          {/* Messages List */}
           <div className="overflow-y-auto max-h-[40vh] p-4 pointer-events-auto chat-mask flex flex-col gap-2 pb-2 scrollbar-hide">
             {messages.map(msg => (
               <div key={msg.id} className="text-white text-[13px] leading-snug drop-shadow-md">
@@ -686,7 +844,6 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
             <div ref={messagesEndRef} className="h-1 flex-shrink-0" />
           </div>
 
-          {/* Input & Emoji Bar */}
           <div className="p-4 pt-1 pointer-events-auto bg-gradient-to-t from-black/80 to-transparent flex items-center gap-3">
             {currentUser ? (
               <form onSubmit={sendMessage} className="flex-1 flex gap-2">
@@ -711,7 +868,6 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
               </div>
             )}
 
-            {/* Emoji Button */}
             {(!viewerStatus || isStreamer) && currentUser && (
               <button 
                 onClick={() => {
@@ -727,6 +883,10 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
           </div>
         </div>
       </div>
+
+      {showTree && (
+        <MeshTreeVisualizer roomId={id as string} onClose={() => setShowTree(false)} isStreamer={isStreamer} />
+      )}
     </div>
     </>
   );

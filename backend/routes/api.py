@@ -859,6 +859,111 @@ def get_live_room_tree(room_id):
         return jsonify({'error': 'No active tree for this room', 'tree': {}})
     return jsonify({'tree': MESH_TREES[room_id]})
 
+@api_bp.route('/live/rooms/<room_id>/settings', methods=['POST'])
+def update_live_room_settings(room_id):
+    data = request.json
+    max_layers = data.get('max_layers', 3)
+    layer_capacity = data.get('layer_capacity', 4)
+    total_viewers = data.get('total_viewers', 200)
+    base_delay = data.get('base_delay', 1000)
+    layer_delay = data.get('layer_delay', 300)
+    
+    # 這裡我們將這個設定更新到資料庫，未來 /join 分配邏輯就會遵守這個限制
+    db.live_rooms.update_one(
+        {"id": room_id},
+        {"$set": {
+            "max_layers": max_layers,
+            "layer_0_capacity": layer_capacity,
+            "layer_n_capacity": layer_capacity,
+            "max_viewers": total_viewers,
+            "base_delay": base_delay,
+            "layer_delay": layer_delay
+        }}
+    )
+    return jsonify({'message': 'Settings updated'})
+
+@api_bp.route('/live/rooms/<room_id>/report_stats', methods=['POST'])
+def report_live_room_stats(room_id):
+    data = request.json
+    peer_id = data.get('peer_id')
+    bitrate = data.get('bitrate_kbps')
+    ping = data.get('ping_ms')
+    
+    if room_id in MESH_TREES and peer_id in MESH_TREES[room_id]:
+        MESH_TREES[room_id][peer_id]['stats'] = {
+            'bitrate': bitrate,
+            'ping': ping
+        }
+    return jsonify({'message': 'Stats updated'})
+
+@api_bp.route('/live/rooms/<room_id>/swap_nodes', methods=['POST'])
+def swap_live_room_nodes(room_id):
+    data = request.json
+    node_a = data.get('node_a')
+    node_b = data.get('node_b')
+    
+    if room_id not in MESH_TREES:
+        return jsonify({'error': 'Tree not found'}), 404
+        
+    tree = MESH_TREES[room_id]
+    if node_a not in tree or node_b not in tree:
+        return jsonify({'error': 'Node not found'}), 404
+        
+    # 禁止與自己的子孫交換 (避免死結循環)
+    def is_descendant(parent, target):
+        children = tree.get(parent, {}).get('children', [])
+        if target in children: return True
+        for child in children:
+            if is_descendant(child, target): return True
+        return False
+        
+    if is_descendant(node_a, node_b) or is_descendant(node_b, node_a):
+        return jsonify({'error': 'Cannot swap with a direct descendant'}), 400
+        
+    parent_a = tree[node_a]['parent']
+    parent_b = tree[node_b]['parent']
+    
+    # 執行樹結構更新
+    if parent_a and node_a in tree[parent_a]['children']:
+        tree[parent_a]['children'].remove(node_a)
+    if parent_b and node_b in tree[parent_b]['children']:
+        tree[parent_b]['children'].remove(node_b)
+        
+    if parent_b:
+        tree[parent_b]['children'].append(node_a)
+        tree[node_a]['parent'] = parent_b
+        tree[node_a]['layer'] = tree[parent_b]['layer'] + 1
+        
+    if parent_a:
+        tree[parent_a]['children'].append(node_b)
+        tree[node_b]['parent'] = parent_a
+        tree[node_b]['layer'] = tree[parent_a]['layer'] + 1
+    
+    # 發送強制斷線與重連指令到 live_messages，只對目標生效
+    # 對 node_a 發送命令：斷開 parent_a，連接 parent_b
+    if parent_b:
+        db.live_messages.insert_one({
+            "id": str(uuid.uuid4()),
+            "room_id": room_id,
+            "sender_id": "SYSTEM",
+            "sender_name": "系統",
+            "content": json.dumps({"type": "SWAP_PARENT", "target": node_a, "new_parent": parent_b}),
+            "created_at": datetime.utcnow().isoformat()
+        })
+        
+    # 對 node_b 發送命令：斷開 parent_b，連接 parent_a
+    if parent_a:
+        db.live_messages.insert_one({
+            "id": str(uuid.uuid4()),
+            "room_id": room_id,
+            "sender_id": "SYSTEM",
+            "sender_name": "系統",
+            "content": json.dumps({"type": "SWAP_PARENT", "target": node_b, "new_parent": parent_a}),
+            "created_at": datetime.utcnow().isoformat()
+        })
+        
+    return jsonify({'message': 'Swap commands dispatched'})
+
 @api_bp.route('/live/rooms/<room_id>/join', methods=['POST'])
 def join_mesh(room_id):
     data = request.json
@@ -903,7 +1008,7 @@ def join_mesh(room_id):
             tree[parent_id]["children"].append(viewer_peer_id)
         tree[viewer_peer_id]["parent"] = parent_id
         tree[viewer_peer_id]["layer"] = tree[parent_id]["layer"] + 1
-        return jsonify({"parent_peer_id": parent_id})
+        return jsonify({"parent_peer_id": parent_id, "layer": tree[viewer_peer_id]['layer']})
     
     return jsonify({"error": "Live room mesh network is at maximum capacity"}), 503
 
