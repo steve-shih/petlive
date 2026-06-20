@@ -264,7 +264,7 @@ export default function Navbar() {
             </button>
 
             {showDropdown && currentUser && (
-              <div className="absolute right-0 mt-2 w-64 bg-background border border-surface/50 rounded-2xl shadow-xl overflow-hidden py-2">
+              <div className="absolute right-0 mt-2 w-64 bg-background border border-surface/50 rounded-2xl shadow-xl overflow-hidden overflow-y-auto max-h-[80vh] py-2">
                 
                 {(currentUser.role === 'ADMIN' || adminUserId) && (
                   <>
@@ -288,26 +288,14 @@ export default function Navbar() {
                 )}
                 
                 <div className="py-2 border-t border-surface/50 mt-2">
-                  <Link href="/profile?tab=bids" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
-                    <span>🔨</span> 我的出價
-                  </Link>
-                  <Link href="/profile?tab=winnings" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
-                    <span>🏆</span> 我的得標
-                  </Link>
-                  <Link href="/profile?tab=orders" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
-                    <span>📦</span> 買到的訂單
-                  </Link>
-                  <Link href="/profile?tab=watchlist" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
-                    <span>🤍</span> 關注清單
+                  <Link href="/profile?tab=dashboard" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
+                    <span>👤</span> 個人主頁
                   </Link>
                   <Link href="/profile?tab=notifications" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
                     <span>🔔</span> 通知
                   </Link>
                   <Link href="/profile?tab=settings" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
                     <span>⚙️</span> 帳號設定
-                  </Link>
-                  <Link href="/profile?tab=credit" onClick={() => setShowDropdown(false)} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-text-secondary hover:text-brand hover:bg-surface/50 transition-colors">
-                    <span>📊</span> 信用資訊
                   </Link>
                   <div className="h-px bg-surface/50 my-1 mx-4"></div>
                   <button onClick={handleLogout} className="w-full px-6 py-2.5 flex items-center gap-3 text-sm text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors">

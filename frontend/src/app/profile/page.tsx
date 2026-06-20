@@ -21,6 +21,7 @@ function ProfileContent() {
   const { showToast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [pricing, setPricing] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
   
   // Tab Management
   const initialTab = searchParams.get('tab') || 'dashboard';
@@ -41,6 +42,13 @@ function ProfileContent() {
     const res = await fetch(`/api/users/${userId}`, { headers: { "ngrok-skip-browser-warning": "69420" } });
     const data = await res.json();
     setUser(data);
+    
+    // 載入通知
+    const notifRes = await fetch(`/api/notifications/${userId}`, { headers: { "ngrok-skip-browser-warning": "69420" } });
+    if (notifRes.ok) {
+      const notifs = await notifRes.json();
+      setNotifications(notifs);
+    }
   };
 
   const loadPricing = async () => {
@@ -109,6 +117,30 @@ function ProfileContent() {
       }
     } catch (err) {
       showToast("更新失敗", "error");
+    }
+  };
+
+  const saveSettings = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get('name') as string,
+      phone: formData.get('phone') as string,
+    };
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        showToast("帳號設定更新成功！", "success");
+        loadUser();
+      } else {
+        showToast("更新失敗", "error");
+      }
+    } catch (err) {
+      showToast("發生錯誤", "error");
     }
   };
 
@@ -266,14 +298,24 @@ function ProfileContent() {
             <div className="animate-fade-in">
               <h2 className="text-2xl font-bold mb-6">🔔 通知中心</h2>
               <div className="space-y-4">
-                <div className="p-4 bg-brand/10 border border-brand/30 rounded-xl flex gap-4">
-                  <div className="text-2xl">🎉</div>
-                  <div>
-                    <h4 className="font-bold text-brand">歡迎加入 PetLive</h4>
-                    <p className="text-sm text-text-secondary">您已成功註冊並成為會員，開始探索各種珍奇異獸吧！</p>
-                    <span className="text-xs text-text-secondary mt-1 block">剛剛</span>
+                {notifications.length === 0 ? (
+                  <div className="text-center py-12 text-text-secondary bg-surface rounded-xl border border-surface/50">
+                    目前沒有任何通知
                   </div>
-                </div>
+                ) : (
+                  notifications.map(notif => (
+                    <div key={notif.id} className={`p-4 border rounded-xl flex gap-4 ${notif.read ? 'bg-surface border-surface/50 opacity-70' : 'bg-brand/10 border-brand/30'}`}>
+                      <div className="text-2xl">{notif.title.includes('歡迎') ? '🎉' : '🔔'}</div>
+                      <div>
+                        <h4 className={`font-bold ${notif.read ? 'text-text-primary' : 'text-brand'}`}>{notif.title}</h4>
+                        <p className="text-sm text-text-secondary">{notif.content}</p>
+                        <span className="text-xs text-text-secondary mt-1 block">
+                          {new Date(notif.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -281,22 +323,22 @@ function ProfileContent() {
           {activeMenu === 'settings' && (
             <div className="animate-fade-in">
               <h2 className="text-2xl font-bold mb-6">⚙️ 帳號設定</h2>
-              <div className="space-y-6 max-w-2xl">
+              <form onSubmit={saveSettings} className="space-y-6 max-w-2xl">
                 <div className="bg-surface border border-surface/50 p-6 rounded-xl">
                   <h3 className="font-bold mb-4 border-b border-surface/50 pb-2">個人檔案</h3>
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm text-text-secondary block mb-1">顯示名稱</label>
-                      <input type="text" defaultValue={user.name} className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2" />
+                      <input name="name" type="text" defaultValue={user.name} className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2" required />
                     </div>
                     <div>
                       <label className="text-sm text-text-secondary block mb-1">手機號碼</label>
-                      <input type="text" defaultValue={user.phone} className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2" readOnly />
+                      <input name="phone" type="text" defaultValue={user.phone} className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2" />
                     </div>
                   </div>
                 </div>
-                <button className="bg-brand text-white px-6 py-2 rounded-lg font-bold hover:bg-brand/90 transition-colors">儲存設定</button>
-              </div>
+                <button type="submit" className="bg-brand text-white px-6 py-2 rounded-lg font-bold hover:bg-brand/90 transition-colors">儲存設定</button>
+              </form>
             </div>
           )}
 

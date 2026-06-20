@@ -34,7 +34,8 @@ export default function Home() {
     const userId = localStorage.getItem("current_user_id");
     setCurrentUserId(userId);
     
-    let url = "/api/products?";
+    // 加入時間戳記作為 Cache Buster，強制繞過手機上頑固的 308 快取
+    let url = `/api/products?_cb=${new Date().getTime()}&`;
     if (mainCategory !== "ALL") url += `main_category=${mainCategory}&`;
     if (subCategory !== "ALL") url += `sub_category=${subCategory}&`;
     url += `filter_followed=${filterFollowed}&`;

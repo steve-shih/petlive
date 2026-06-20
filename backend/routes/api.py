@@ -500,6 +500,41 @@ def send_message():
     })
     return jsonify({'message': 'Message sent'})
 
+@api_bp.route('/users/<user_id>', methods=['PUT'])
+def update_user_profile(user_id):
+    data = request.json
+    update_fields = {}
+    if 'name' in data:
+        update_fields['name'] = data['name']
+    if 'phone' in data:
+        update_fields['phone'] = data['phone']
+        
+    if not update_fields:
+        return jsonify({'error': 'No data provided'}), 400
+        
+    db.users.update_one({'id': user_id}, {'$set': update_fields})
+    return jsonify({'message': 'Profile updated successfully'})
+
+@api_bp.route('/notifications/<user_id>', methods=['GET'])
+def get_user_notifications(user_id):
+    # Fetch real notifications from database
+    notifs = list(db.notifications.find({'user_id': user_id}, {'_id': 0}).sort('created_at', -1).limit(50))
+    # If no notifications exist, return a default welcome notification
+    if not notifs:
+        welcome_notif = {
+            'id': 'welcome-1',
+            'user_id': user_id,
+            'title': '歡迎加入 PetLive',
+            'content': '您已成功註冊並成為會員，開始探索各種珍奇異獸吧！',
+            'created_at': datetime.utcnow().isoformat(),
+            'read': False
+        }
+        db.notifications.insert_one(welcome_notif)
+        del welcome_notif['_id']
+        notifs.append(welcome_notif)
+        
+    return jsonify(notifs)
+
 @api_bp.route('/users/<user_id>', methods=['GET'])
 def get_user(user_id):
     u = db.users.find_one({"id": user_id}, {"_id": 0})
@@ -529,7 +564,7 @@ def get_user(user_id):
     else:
         u['watchlist'] = []
         
-    u['notifications'] = [] # Mock notifications can be injected frontend
+    # Return gallery (default to empty list if not exists)
     
     # Return gallery (default to empty list if not exists)
     u['gallery'] = u.get('gallery', [])
@@ -817,6 +852,12 @@ def update_live_room_peer(room_id):
     MESH_TREES[room_id][peer_id] = {"children": [], "parent": None, "layer": 0}
     
     return jsonify({'message': 'Peer ID updated'})
+
+@api_bp.route('/live/rooms/<room_id>/tree', methods=['GET'])
+def get_live_room_tree(room_id):
+    if room_id not in MESH_TREES:
+        return jsonify({'error': 'No active tree for this room', 'tree': {}})
+    return jsonify({'tree': MESH_TREES[room_id]})
 
 @api_bp.route('/live/rooms/<room_id>/join', methods=['POST'])
 def join_mesh(room_id):

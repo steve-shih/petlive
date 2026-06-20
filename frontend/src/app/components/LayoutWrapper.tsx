@@ -19,11 +19,11 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  if (isLiveRoomPage && isMobile) {
+  if (isLiveRoomPage) {
     return (
       <>
         <NgrokBypass />
-        <main className="fixed inset-0 overflow-hidden bg-black text-white z-[9999] touch-none">
+        <main className="fixed inset-0 overflow-hidden bg-black text-white z-[9999] touch-none flex items-center justify-center">
           {children}
         </main>
       </>
