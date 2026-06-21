@@ -5,14 +5,14 @@ export default function Footer() {
     <footer className="bg-surface border-t border-surface/50 py-12 mt-20 relative z-10">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          
+
           <div className="col-span-1 md:col-span-2">
             <Link href="/" className="flex items-center space-x-2 text-2xl font-black text-brand mb-4">
               <span>🦎</span>
               <span>PetLive</span>
             </Link>
             <p className="text-text-secondary mb-4 leading-relaxed max-w-sm">
-              全台首創活體競標與直購平台。我們提供最安全的交易環境、DOA活體保障機制，以及最即時的 WebRTC 直播與一對一視訊服務。
+              全台首創特寵直播競標平台。專為合法業者打造，解決傳統社群平台（如 FB、TikTok）無故封鎖、限流的困擾，提供最自由、安心的展售空間。
             </p>
             <div className="flex space-x-4">
               <button onClick={() => alert("敬請期待 iOS App！")} className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors cursor-pointer border-none outline-none">📱</button>
@@ -40,9 +40,9 @@ export default function Footer() {
               <li><Link href="/legal" className="hover:text-brand transition-colors">法律與政策</Link></li>
             </ul>
           </div>
-          
+
         </div>
-        
+
         <div className="pt-8 border-t border-surface/50 text-center text-text-secondary text-sm flex flex-col md:flex-row justify-between items-center gap-4">
           <p>live.petpa.tw 2026 版權所有</p>
           <div className="flex space-x-6">
