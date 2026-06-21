@@ -159,9 +159,10 @@ export default function LiveLobby() {
           <div className="flex gap-2">
             <button 
               onClick={() => prepareLive(true)}
-              className="bg-brand text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-brand/90 transition-colors"
+              className="bg-brand text-white w-10 h-10 flex items-center justify-center rounded-full font-bold shadow-lg hover:bg-brand/90 transition-colors text-xl"
+              title="開始直播"
             >
-              🎥 開始直播
+              🎥
             </button>
             <button 
               onClick={() => prepareLive(false)}
