@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Video } from "lucide-react";
 
 interface LiveRoom {
   id: string;
@@ -159,10 +160,10 @@ export default function LiveLobby() {
           <div className="flex gap-2">
             <button 
               onClick={() => prepareLive(true)}
-              className="bg-brand text-white w-10 h-10 flex items-center justify-center rounded-full font-bold shadow-lg hover:bg-brand/90 transition-colors text-xl"
+              className="bg-brand text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg hover:bg-brand/90 transition-colors"
               title="開始直播"
             >
-              🎥
+              <Video size={20} strokeWidth={2.5} />
             </button>
             <button 
               onClick={() => prepareLive(false)}
