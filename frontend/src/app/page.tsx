@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface Product {
   id: string;
@@ -21,6 +22,7 @@ interface ProductResponse {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [hotProducts, setHotProducts] = useState<Product[]>([]);
   const [latestProducts, setLatestProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,13 @@ export default function Home() {
   const loadProducts = () => {
     setLoading(true);
     const userId = localStorage.getItem("current_user_id");
+    const hasSeenWelcome = localStorage.getItem("has_seen_welcome");
+    
+    if (!userId && !hasSeenWelcome) {
+      router.push("/welcome");
+      return;
+    }
+    
     setCurrentUserId(userId);
     
     // 加入時間戳記作為 Cache Buster，強制繞過手機上頑固的 308 快取
