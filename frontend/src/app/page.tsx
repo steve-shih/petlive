@@ -137,7 +137,10 @@ export default function Home() {
       <div className="w-full h-64 bg-gradient-to-r from-brand to-brand/70 rounded-2xl flex items-center justify-center mb-8 shadow-lg relative overflow-hidden">
         <div className="relative z-10 text-center text-white">
           <h1 className="text-4xl font-bold mb-4 tracking-wider">歡迎來到 寵BAR</h1>
-          <p className="text-lg opacity-90">尋找屬於你的特殊寵物夥伴</p>
+          <p className="text-lg opacity-90">進入寵物交流</p>
+          <div className="mt-4 inline-block bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full text-sm font-bold border border-yellow-500/50">
+            🚧 平台開發維護中，即將正式上線！
+          </div>
         </div>
       </div>
 
