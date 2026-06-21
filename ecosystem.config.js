@@ -26,6 +26,19 @@ module.exports = {
       env: {
         FLASK_ENV: 'production'
       }
+    },
+    {
+      name: 'petlive-peer-server',
+      script: 'server.js',
+      cwd: './peer-server',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '200M',
+      env: {
+        NODE_ENV: 'production'
+      }
     }
   ]
 };

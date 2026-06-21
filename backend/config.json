@@ -8,5 +8,21 @@
   },
   "auth": {
     "google_client_id": "788146443516-97ieiv3lpoauiehkpk7cnqnv82tqgh0v.apps.googleusercontent.com"
+  },
+  "live": {
+    "default_max_layers": 3,
+    "default_layer_capacity": 4,
+    "default_total_viewers": 200,
+    "default_base_delay": 1000,
+    "default_layer_delay": 300,
+    "default_password": "",
+    "default_blur_preview": false,
+    "default_noise_suppression": true,
+    "default_beauty_filter": false,
+    "default_bg_blur": false
+  },
+  "system": {
+    "marquee_enabled": true,
+    "marquee_text": "目前為開發或維護期"
   }
 }

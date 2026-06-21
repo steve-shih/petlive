@@ -15,9 +15,9 @@ export default function Footer() {
               全台首創活體競標與直購平台。我們提供最安全的交易環境、DOA活體保障機制，以及最即時的 WebRTC 直播與一對一視訊服務。
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors">📱</a>
-              <a href="#" className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors">📷</a>
-              <a href="#" className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors">💬</a>
+              <button onClick={() => alert("敬請期待 iOS App！")} className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors cursor-pointer border-none outline-none">📱</button>
+              <button onClick={() => alert("敬請期待 Instagram 官方帳號！")} className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors cursor-pointer border-none outline-none">📷</button>
+              <button onClick={() => alert("敬請期待 LINE 官方帳號！")} className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors cursor-pointer border-none outline-none">💬</button>
             </div>
           </div>
 
@@ -44,7 +44,7 @@ export default function Footer() {
         </div>
         
         <div className="pt-8 border-t border-surface/50 text-center text-text-secondary text-sm flex flex-col md:flex-row justify-between items-center gap-4">
-          <p>© {new Date().getFullYear()} PetLive 活體生態館. All rights reserved.</p>
+          <p>live.petpa.tw 2026 版權所有</p>
           <div className="flex space-x-6">
             <Link href="/legal?tab=terms" className="hover:text-brand transition-colors">使用條款</Link>
             <Link href="/legal?tab=privacy" className="hover:text-brand transition-colors">隱私政策</Link>

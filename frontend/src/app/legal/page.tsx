@@ -49,7 +49,7 @@ function LegalContent() {
         {activeTab === 'terms' && (
           <div className="animate-fade-in">
             <h2 className="text-2xl font-bold text-brand mb-6">PetLive 使用條款</h2>
-            <p>歡迎您使用 PetLive 活體生態館（以下簡稱「本平台」）。在您註冊成為本平台會員，或開始使用本平台提供之服務前，請務必詳細閱讀並同意本使用條款。</p>
+            <p>歡迎您使用 PetLive（以下簡稱「本平台」）。在您註冊成為本平台會員，或開始使用本平台提供之服務前，請務必詳細閱讀並同意本使用條款。</p>
             
             <h3>1. 帳號與安全</h3>
             <p>您同意在註冊時提供真實且準確的個人資料。若發現資料有虛偽不實，本平台有權立即暫停或終止您的帳號，並拒絕您使用本平台之全部或部分服務。</p>

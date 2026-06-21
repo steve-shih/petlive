@@ -35,3 +35,12 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
+
+@theme {
+  --animate-marquee: marquee 15s linear infinite;
+
+  @keyframes marquee {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
+}
