@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
+COPY webrtc-tree-*.tgz ./
 RUN npm ci
 
 # Copy source code
