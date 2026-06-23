@@ -3,8 +3,6 @@ import { useEffect, useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../components/Toast";
 import dynamic from 'next/dynamic';
-import { io } from 'socket.io-client';
-import { RTCTreeClient } from 'webrtc-tree/client';
 
 const MeshTreeVisualizer = dynamic(() => import('@/app/components/MeshTreeVisualizer'), { 
   ssr: false,
@@ -88,10 +86,6 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
   const parentCallRef = useRef<any>(null);
   const activeCallsRef = useRef<any>({});
   const layerRef = useRef(0);
-
-  const webrtcClientRef = useRef<any>(null);
-  const socketRef = useRef<any>(null);
-  const useWebrtcTreeRef = useRef(true); // Hardcoded to Mode 2
 
   const broadcastData = (data: any) => {
     if (peerInstance.current && peerInstance.current.connections) {
@@ -207,11 +201,7 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
             setIsStreamer(true);
             isStreamerRef.current = true;
             setIsPasswordVerified(true);
-            if (useWebrtcTreeRef.current) {
-              startCameraAndNativeWebRTC("user");
-            } else {
-              startCameraAndPeerJS("user");
-            }
+            startCameraAndPeerJS("user");
           } else {
             if (room.password) {
               setShowPasswordPrompt(true);
@@ -270,11 +260,7 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
           }
           if (room && room.streamer_peer_id && !viewerInitializedRef.current && isPasswordVerified && !isStreamerRef.current) {
             viewerInitializedRef.current = true;
-            if (useWebrtcTreeRef.current) {
-              startViewerNativeWebRTC();
-            } else {
-              startViewerPeerJS();
-            }
+            startViewerPeerJS();
           }
           if (room && isStreamerRef.current) {
             // Update effect states
@@ -384,12 +370,6 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
       }
       if (peerInstance.current) {
         peerInstance.current.destroy();
-      }
-      if (webrtcClientRef.current) {
-        webrtcClientRef.current.destroy();
-      }
-      if (socketRef.current) {
-        socketRef.current.disconnect();
       }
     };
   }, [id, isPasswordVerified]);
@@ -797,118 +777,7 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
     if (videoTrack) {
        videoTrack.stop();
     }
-    if (useWebrtcTreeRef.current) {
-      startCameraAndNativeWebRTC(newMode);
-    } else {
-      startCameraAndPeerJS(newMode);
-    }
-  };
-
-  const startCameraAndNativeWebRTC = async (mode: "user" | "environment") => {
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("SECURE_CONTEXT_REQUIRED");
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: mode, width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: {
-          noiseSuppression: isNoiseSuppressionEnabledRef.current,
-          echoCancellation: true,
-          autoGainControl: true
-        }
-      });
-      rawStreamRef.current = stream;
-      if (rawVideoRef.current) {
-        rawVideoRef.current.srcObject = stream;
-        rawVideoRef.current.play().catch(e => console.error(e));
-      }
-      if (!processedStreamRef.current) requestAnimationFrame(processVideoFrame);
-      
-      setTimeout(async () => {
-        let videoTrack = stream.getVideoTracks()[0];
-        if (canvasRef.current && (canvasRef.current as any).captureStream) {
-            videoTrack = (canvasRef.current as any).captureStream(30).getVideoTracks()[0];
-        }
-        const audioTrack = stream.getAudioTracks()[0];
-        const outputStream = new MediaStream([videoTrack, audioTrack].filter(Boolean));
-        processedStreamRef.current = outputStream;
-        if (videoRef.current) videoRef.current.srcObject = outputStream;
-        
-        const socket = io({ path: '/peer-api/socket.io', addTrailingSlash: false, transports: ['polling'] });
-        socketRef.current = socket;
-        
-        const client = new RTCTreeClient({
-          onStatusChange: setViewerStatus,
-          onStreamReady: (s) => {
-             if (videoRef.current) videoRef.current.srcObject = s;
-          },
-          sendMessageFn: (targetPeerId, payload) => {
-             socket.emit("rtc-message", { roomId: id, toPeerId: targetPeerId, payload });
-          }
-        });
-        webrtcClientRef.current = client;
-
-        socket.on('rtc-message', (data: any) => {
-          client.receiveMessage(data.fromPeerId, data.payload);
-        });
-
-        socket.on('connect', () => {
-            socket.emit("create-room", id);
-        });
-
-        socket.on("room-created", async () => {
-           await client.initStreamer(socket.id!, outputStream);
-           showToast("MODE 2: 原生 WebRTC 啟動成功", "success");
-           
-           fetch(`/api/live/rooms/${id}/peer`, {
-             method: "PUT",
-             headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "69420" },
-             body: JSON.stringify({ peer_id: "MODE2_" + socket.id })
-           }).catch(console.error);
-        });
-        
-      }, 500);
-    } catch(err: any) {
-      console.error(err);
-      setCameraError("相機異常: " + err.message);
-    }
-  };
-
-  const startViewerNativeWebRTC = async () => {
-    try {
-      const socket = io({ path: '/peer-api/socket.io', addTrailingSlash: false, transports: ['polling'] });
-      socketRef.current = socket;
-      
-      const client = new RTCTreeClient({
-        onStatusChange: setViewerStatus,
-        onStreamReady: (s) => {
-           if (videoRef.current) {
-              videoRef.current.srcObject = s;
-              videoRef.current.play().catch(e => console.error(e));
-           }
-        },
-        sendMessageFn: (targetPeerId, payload) => {
-           socket.emit("rtc-message", { roomId: id, toPeerId: targetPeerId, payload });
-        },
-        fetchParentIdFn: () => {
-           return new Promise((resolve) => {
-              socket.emit('join-room', id, (parentId: string) => resolve(parentId));
-           });
-        }
-      });
-      webrtcClientRef.current = client;
-
-      socket.on('rtc-message', (data: any) => {
-        client.receiveMessage(data.fromPeerId, data.payload);
-      });
-
-      socket.on('connect', async () => {
-          await client.initViewer(socket.id!);
-          showToast("MODE 2: 已連接原生 WebRTC", "success");
-      });
-    } catch(err) {
-      console.error(err);
-    }
+    startCameraAndPeerJS(newMode);
   };
 
   const startViewerPeerJS = async () => {

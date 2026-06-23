@@ -1,4 +1,4 @@
-﻿import os
+import os
 from pymongo import MongoClient
 from infrastructure.config_loader import ConfigLoader
 
@@ -9,13 +9,13 @@ class Database:
     @classmethod
     def get_db(cls):
         if cls._db is None:
-            # ?芸?霈?憓??賂??亦?蝙??config.json
+            # 優先讀取環境變數，若無則使用 config.json
             mongo_uri = os.environ.get('MONGO_URI') or ConfigLoader.get('database', 'mongo_uri')
-            db_name = os.environ.get('DB_NAME') or ConfigLoader.get('database', 'db_name', 'petbar')
+            db_name = os.environ.get('DB_NAME') or ConfigLoader.get('database', 'db_name', 'petlive')
             
             try:
                 cls._client = MongoClient(mongo_uri)
-                # 憒? URI 銝剜??身 DB 撠梁?身???血?雿輻 config ??db_name
+                # 如果 URI 中有預設 DB 就用預設的，否則使用 config 的 db_name
                 try:
                     cls._db = cls._client.get_default_database()
                 except Exception:

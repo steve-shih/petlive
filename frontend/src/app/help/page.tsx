@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 
@@ -15,25 +15,25 @@ function HelpContent() {
     <div className="w-full max-w-6xl p-4 md:p-8 flex flex-col md:flex-row gap-8">
       {/* Sidebar */}
       <div className="w-full md:w-64 shrink-0">
-        <h1 className="text-3xl font-black mb-6">撟怠銝剖?</h1>
+        <h1 className="text-3xl font-black mb-6">幫助中心</h1>
         <div className="flex flex-col space-y-2">
           <button 
             onClick={() => setActiveTab('safe')}
             className={`text-left px-4 py-3 rounded-xl transition-colors font-bold ${activeTab === 'safe' ? 'bg-brand text-white' : 'hover:bg-surface-hover text-text-secondary'}`}
           >
-            鈭斗?摰?脰風
+            交易安全防護
           </button>
           <button 
             onClick={() => setActiveTab('doa')}
             className={`text-left px-4 py-3 rounded-xl transition-colors font-bold ${activeTab === 'doa' ? 'bg-brand text-white' : 'hover:bg-surface-hover text-text-secondary'}`}
           >
-            DOA 瘣駁?靽?
+            DOA 活體保障
           </button>
           <button 
             onClick={() => setActiveTab('seller')}
             className={`text-left px-4 py-3 rounded-xl transition-colors font-bold ${activeTab === 'seller' ? 'bg-brand text-white' : 'hover:bg-surface-hover text-text-secondary'}`}
           >
-            鞈?振銝??
+            賣家上架指南
           </button>
         </div>
       </div>
@@ -43,64 +43,64 @@ function HelpContent() {
         
         {activeTab === 'safe' && (
           <div className="animate-fade-in">
-            <h2 className="text-2xl font-bold text-brand mb-6">鈭斗?摰?脰風</h2>
-            <p>PetBar ?游??潭??閰??璉????其漱?憓????乩?憭??脰風璈嚗</p>
+            <h2 className="text-2xl font-bold text-brand mb-6">交易安全防護</h2>
+            <p>PetBar 致力於打造無詐騙、無棄標的安全交易環境。我們導入了多重防護機制：</p>
             
-            <h3>1. 撖血?隤?蝟餌絞</h3>
-            <p>??隢??箝都摰嗚??冽嚗??????Ⅳ蝬??祕?澈??霅之撟?雿???撣唾?閰??◢?芥</p>
+            <h3>1. 實名認證系統</h3>
+            <p>所有申請成為「賣家」的用戶，皆須通過手機號碼綁定與實名身分驗證。這大幅降低了免洗帳號詐騙的風險。</p>
 
-            <h3>2. 靽∠閰?璈</h3>
-            <p>瘥?甈⊥???鈭斗??賣?蝝舐?鞎瑁都??縑?函????璅?鈭斗?蝟曄?嚗頂蝯勗???蝛??蝛?雿銝摰?瑼鳴?蝟餌絞撠???嗅?箏???嗆??</p>
+            <h3>2. 信用評分機制</h3>
+            <p>每一次成功的交易都會累積買賣雙方的信用積分。若有棄標或交易糾紛，系統將扣除積分。當積分低於一定門檻，系統將自動限制其出價與上架權限。</p>
 
-            <h3>3. ?湔/閬?撽?</h3>
-            <p>?撥?遣霅啗眺摰嗅蝯董??閬?鞈?振??撟喳??WebRTC 1撠?閬??嚗??蝷箸暑擃??曄?嚗Ⅱ靽???閬?敺</p>
+            <h3>3. 直播/視訊驗證</h3>
+            <p>我們強烈建議買家在結帳前，要求賣家透過平台的 WebRTC 1對1視訊功能，即時展示活體的現狀，確保商品「所見即所得」。</p>
           </div>
         )}
 
         {activeTab === 'doa' && (
           <div className="animate-fade-in">
-            <h2 className="text-2xl font-bold text-brand mb-6">DOA 瘣駁?靽?瘚? (Dead on Arrival)</h2>
-            <p>瘣駁????券◢?迎??箔????寞???隢?敹?潮摰誑銝?蝞望?蝔?</p>
+            <h2 className="text-2xl font-bold text-brand mb-6">DOA 活體保障流程 (Dead on Arrival)</h2>
+            <p>活體運送存在風險，為保障雙方權益，請務必嚴格遵守以下開箱流程：</p>
             
             <div className="bg-brand/10 border border-brand/50 p-6 rounded-xl my-6">
-              <h3 className="text-brand m-0 mb-4">? ?函??蔣?拳閬?</h3>
+              <h3 className="text-brand m-0 mb-4">📹 全程錄影開箱規定</h3>
               <ul className="m-0 space-y-2">
-                <li>敹?敺??撣嗅???憪?敶梧?蝣箔??ㄨ摰?芾◤??</li>
-                <li>?蔣敹????∪摨?銝?芾摩???銝剜</li>
-                <li>敶梁?敹?皜????株??拳擃?閫嚗誑??蝞勗?瘣駁???瘜</li>
+                <li>必須從「剪開膠帶前」開始錄影，確保包裹完整未被拆封。</li>
+                <li>錄影必須「一鏡到底」，不可剪輯、暫停或中斷。</li>
+                <li>影片必須清晰拍到托運單號、箱體外觀，以及開箱後活體的狀況。</li>
               </ul>
             </div>
 
-            <h3>憒??唾? DOA ??嚗</h3>
+            <h3>如何申請 DOA 理賠？</h3>
             <ol>
-              <li>**蝣箄?甇颱滿**嚗?蝞望??亦?暹暑擃歇?∠??質楚鞊∴?隢??喳?甇駁??恍皜???</li>
-              <li>**???批???*嚗??潛偷?嗅?鋆孵? **24 撠???*嚗??拳敶梁??喲策鞈?振</li>
-              <li>**敺???**嚗都摰嗥Ⅱ隤隤文?嚗?靘??嗅?鈭斗?蝝?嚗脰??憿甈整?暑擃??銝?祥嚗???撖?蝑潭暑擃</li>
+              <li>**確認死亡**：開箱時若發現活體已無生命跡象，請立即將死體畫面清楚錄下。</li>
+              <li>**時效內回報**：請於簽收包裹後 **24 小時內**，將開箱影片傳送給賣家。</li>
+              <li>**後續處理**：賣家確認無誤後，應依據當初交易約定，進行「全額退款」、「退還活體本金（不含運費）」或「補寄同等值活體」。</li>
             </ol>
-            <p className="text-sm text-text-secondary">??閮鳴??亥眺摰嗆靘?摰?敶梧?????24 撠????梧?鞈?振?????? DOA ??</p>
+            <p className="text-sm text-text-secondary">※ 註：若買家未依規定錄影，或超過 24 小時才回報，賣家有權拒絕受理 DOA 理賠。</p>
           </div>
         )}
 
         {activeTab === 'seller' && (
           <div className="animate-fade-in">
-            <h2 className="text-2xl font-bold text-brand mb-6">鞈?振銝??</h2>
-            <p>甇∟??冽???PetBar ?都摰塚??箇雁霅瑕像?啣?鞈迎?銝??隢摰誑銝?蝭?</p>
+            <h2 className="text-2xl font-bold text-brand mb-6">賣家上架指南</h2>
+            <p>歡迎您成為 PetBar 的賣家！為維護平台品質，上架商品請遵守以下規範：</p>
 
-            <h3>1. ??閬?</h3>
+            <h3>1. 圖文規範</h3>
             <ul>
-              <li>敹????喳? 1 撘菜??啁?撖衣?抒??撥?遣霅唬??喳?蝷箏蔣?</li>
-              <li>璅???璆?蝷箇蝔桀?蝔晞偕撖豢??孵噩</li>
-              <li>蝳迫?隞犖?抒?</li>
+              <li>必須提供至少 1 張清晰的實物照片。強烈建議上傳展示影片。</li>
+              <li>標題應清楚標示物種名稱、尺寸或特徵。</li>
+              <li>禁止盜用他人照片。</li>
             </ul>
 
-            <h3>2. ?箏???唳?蝷</h3>
-            <p>?亥痔?桐?瘣駁??瑟??寞??箏?嚗?嚗?????摰?堆?隢?敹?膩銝剛?撖行???亥????箏?銋?鈭?撠偶銋?甈</p>
+            <h3>2. 基因與產地標示</h3>
+            <p>若販售之活體具有特殊基因（如：黑化、白化）或特定產地，請務必於描述中誠實標明。若查證有造假基因之情事，將永久停權。</p>
 
-            <h3>3. ?箄疏??</h3>
-            <p>鞎瑕振摰?蝯董敺?鞈?振? **48 撠???* 摰??箄疏??予瘞?????蝑?蝝?閬辣?脣鞎剁?隢?敹?蝘??眺摰嗆???敺??</p>
+            <h3>3. 出貨時效</h3>
+            <p>買家完成結帳後，賣家應於 **48 小時內** 安排出貨。若因天氣過熱/過冷等因素需要延遲出貨，請務必透過私訊與買家溝通取得同意。</p>
 
-            <h3>4. ??閬?</h3>
-            <p>撖暑擃???雿輻???蝞望?靽?樴拳??冽??末?脫??芣嚗蒂靘迤蝭?曄蔭靽鋡?????蝣箔?瘣駁?摰??</p>
+            <h3>4. 包裝規範</h3>
+            <p>寄送活體請務必使用堅固的紙箱或保麗龍箱。內部應做好防撞措施，並依季節放置保冷袋或暖暖包，確保活體安全送達。</p>
           </div>
         )}
 
@@ -111,7 +111,7 @@ function HelpContent() {
 
 export default function HelpPage() {
   return (
-    <Suspense fallback={<div className="p-10 text-center">頛銝?..</div>}>
+    <Suspense fallback={<div className="p-10 text-center">載入中...</div>}>
       <HelpContent />
     </Suspense>
   );

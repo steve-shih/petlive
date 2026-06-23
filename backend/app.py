@@ -12,7 +12,7 @@ from flasgger import Swagger
 app = Flask(__name__, static_folder='uploads', static_url_path='/uploads')
 CORS(app)
 
-# ????Swagger (API ?辣)
+# 初始化 Swagger (API 文件)
 swagger_config = {
     "headers": [],
     "specs": [
@@ -30,8 +30,8 @@ swagger_config = {
 
 swagger_template = {
     "info": {
-        "title": "撖湎AR - PetBar API",
-        "description": "PetBar API",
+        "title": "寵BAR - PetBar API",
+        "description": "這是 PetBar 活體競標與直播平台的 API 文件。所有的 API 都在此定義與測試。",
         "version": "1.0.0"
     }
 }

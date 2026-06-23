@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 type Theme = "dark" | "light" | "gray";
@@ -15,7 +15,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Load theme from localStorage
-    const savedTheme = localStorage.getItem("petbar_theme") as Theme;
+    const savedTheme = localStorage.getItem("petlive_theme") as Theme;
     if (savedTheme && ["dark", "light", "gray"].includes(savedTheme)) {
       setThemeState(savedTheme);
       document.documentElement.setAttribute("data-theme", savedTheme);
@@ -24,7 +24,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem("petbar_theme", newTheme);
+    localStorage.setItem("petlive_theme", newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
   };
 

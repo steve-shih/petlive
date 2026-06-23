@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 
@@ -15,31 +15,31 @@ function LegalContent() {
     <div className="w-full max-w-6xl p-4 md:p-8 flex flex-col md:flex-row gap-8">
       {/* Sidebar */}
       <div className="w-full md:w-64 shrink-0">
-        <h1 className="text-3xl font-black mb-6">Legal</h1>
+        <h1 className="text-3xl font-black mb-6">法律與政策</h1>
         <div className="flex flex-col space-y-2">
           <button 
             onClick={() => setActiveTab('terms')}
             className={`text-left px-4 py-3 rounded-xl transition-colors font-bold ${activeTab === 'terms' ? 'bg-brand text-white' : 'hover:bg-surface-hover text-text-secondary'}`}
           >
-            雿輻璇狡
+            使用條款
           </button>
           <button 
             onClick={() => setActiveTab('privacy')}
             className={`text-left px-4 py-3 rounded-xl transition-colors font-bold ${activeTab === 'privacy' ? 'bg-brand text-white' : 'hover:bg-surface-hover text-text-secondary'}`}
           >
-            ?梁??輻?
+            隱私政策
           </button>
           <button 
             onClick={() => setActiveTab('abandon')}
             className={`text-left px-4 py-3 rounded-xl transition-colors font-bold ${activeTab === 'abandon' ? 'bg-brand text-white' : 'hover:bg-surface-hover text-text-secondary'}`}
           >
-            璉?瘜??
+            棄標法律須知
           </button>
           <button 
             onClick={() => setActiveTab('live')}
             className={`text-left px-4 py-3 rounded-xl transition-colors font-bold ${activeTab === 'live' ? 'bg-brand text-white' : 'hover:bg-surface-hover text-text-secondary'}`}
           >
-            瘣駁?鈭斗??
+            活體交易須知
           </button>
         </div>
       </div>
@@ -48,81 +48,81 @@ function LegalContent() {
       <div className="flex-1 bg-surface border border-surface/50 rounded-2xl p-6 md:p-10 shadow-lg prose prose-invert max-w-none">
         {activeTab === 'terms' && (
           <div className="animate-fade-in">
-            <h2 className="text-2xl font-bold text-brand mb-6">PetBar 雿輻璇狡</h2>
-            <p>甇∟??其蝙??PetBar嚗誑銝陛蝔晞撟喳????刻酉???箸撟喳?嚗???雿輻?砍像?唳?靘?????隢?敹底蝝圈霈銝血??雿輻璇狡</p>
+            <h2 className="text-2xl font-bold text-brand mb-6">PetBar 使用條款</h2>
+            <p>歡迎您使用 PetBar（以下簡稱「本平台」）。在您註冊成為本平台會員，或開始使用本平台提供之服務前，請務必詳細閱讀並同意本使用條款。</p>
             
-            <h3>1. 撣唾???</h3>
-            <p>?典??閮餃???靘?撖虫?皞Ⅱ?犖鞈???潛鞈????賭?撖佗??砍像?唳?甈??單??蝯迫?函?撣唾?嚗蒂???其蝙?冽撟喳銋?冽??典???</p>
+            <h3>1. 帳號與安全</h3>
+            <p>您同意在註冊時提供真實且準確的個人資料。若發現資料有虛偽不實，本平台有權立即暫停或終止您的帳號，並拒絕您使用本平台之全部或部分服務。</p>
 
-            <h3>2. 鈭斗?閬?</h3>
-            <p>?砍像?啣???鞈?慦????眺鞈???寞?蝘?隤縑???脰?鈭斗??蝳??嗡遙雿??????拐??脫???靽憿??押</p>
+            <h3>2. 交易規範</h3>
+            <p>本平台僅提供資訊媒合服務。買賣雙方應秉持誠信原則進行交易。嚴禁上架任何違反《野生動物保育法》之保育類動物。</p>
 
-            <h3>3. ??璅?</h3>
-            <p>?交??⊥?隞乩?銵嚗頂蝯勗??芸???鈭箏極撖拇敺偶銋?甈?</p>
+            <h3>3. 停權標準</h3>
+            <p>若會員有以下行為，系統將自動或經人工審核後永久停權：</p>
             <ul>
-              <li>銝???抒敞閮甈⊥?璅??</li>
-              <li>?潮??曇??胯?擉???邢?曉隞蝙?刻</li>
-              <li>鞎拙???拙????脤??</li>
+              <li>一個月內累計兩次棄標紀錄。</li>
+              <li>發送垃圾訊息、詐騙連結或騷擾其他使用者。</li>
+              <li>販售非法物品或保育類動物。</li>
             </ul>
           </div>
         )}
 
         {activeTab === 'privacy' && (
           <div className="animate-fade-in">
-            <h2 className="text-2xl font-bold text-brand mb-6">?梁??輻?</h2>
-            <p>PetBar ?虜???函??梁?甈?輻?隤芣???雿?蝙?典?靽風?函??犖鞈?</p>
+            <h2 className="text-2xl font-bold text-brand mb-6">隱私政策</h2>
+            <p>PetBar 非常重視您的隱私權。本政策說明我們如何收集、使用及保護您的個人資料。</p>
             
-            <h3>1. 鞈??園?</h3>
-            <p>???園??典閮餃??‵撖怠犖鞈??誑?脰?鈭斗???????閮??雿??憪??蝯⊿閰晞???蝑?</p>
+            <h3>1. 資料收集</h3>
+            <p>我們將收集您在註冊、填寫個人資料、以及進行交易時所提供的資訊（包含但不限於姓名、聯絡電話、寄送地址等）。</p>
 
-            <h3>2. 鞈?雿輻</h3>
-            <p>?函??犖鞈?撠??冽嚗</p>
+            <h3>2. 資料使用</h3>
+            <p>您的個人資料將僅用於：</p>
             <ul>
-              <li>??閮?瘚?????蝯西都?寡??拇?璆剛?</li>
-              <li>頨思遢隤??董???其?霅瑯</li>
-              <li>??摰Ｚ迄??敺霅啜</li>
+              <li>處理訂單與物流運送（提供給賣方與物流業者）。</li>
+              <li>身份認證與帳號安全保護。</li>
+              <li>處理客訴或法律爭議。</li>
             </ul>
 
-            <h3>3. 鞈?靽風</h3>
-            <p>??冽平??皞? SSL ???銵?霅瑟???頛詨??剁?銝????函????箏?遙??靘策?⊿??洵銝璈?</p>
+            <h3>3. 資料保護</h3>
+            <p>我們採用業界標準的 SSL 加密技術保護您的資料傳輸安全，且不會將您的個資出售或任意提供給無關的第三方機構。</p>
           </div>
         )}
 
         {activeTab === 'abandon' && (
           <div className="animate-fade-in">
-            <h2 className="text-2xl font-bold text-red-500 mb-6">?? 璉?瘜??</h2>
+            <h2 className="text-2xl font-bold text-red-500 mb-6">⚠️ 棄標法律須知</h2>
             <div className="bg-red-500/10 border border-red-500/50 p-6 rounded-xl mb-6">
-              <p className="text-red-400 font-bold m-0">??PetBar 撟喳??蝡嗆?嚗隞?”?典??蒂??敺??蝳??璅??綽?</p>
+              <p className="text-red-400 font-bold m-0">在 PetBar 平台參與競標，即代表您同意並受法律約束。嚴禁惡意棄標行為！</p>
             </div>
             
-            <h3>1. 瘞?鞎砌遙</h3>
-            <p>靘???瘜洵 397 璇?摰??都銋眺?犖嚗?銝??隞???都鈭箏?閫?憟?嚗??嗥??都???都銋??憒??澆??都銋????鞈??鞎餌???眺?犖??鞈??嗅榆憿?鞎砌遙</p>
+            <h3>1. 民事責任</h3>
+            <p>依據《民法》第 397 條規定，拍賣之買受人，如不按時支付價金者，拍賣人得解除契約，將其物再為拍賣。再拍賣之價金，如少於原拍賣之價金及再拍賣之費用者，原買受人應負賠償其差額之責任。</p>
 
-            <h3>2. ??鞎砌遙</h3>
-            <p>?交?⊥?鞈潸眺?餅???奎璅?撠鞈????拿嚗?賣???瘜洵 355 璇??交??蔽?????拿隞犖嚗誑閰?雿踵鈭箸?蝚砌?鈭箇鞎∠銝???嚗?瓷?Ｖ?銋?摰唾???撟港誑銝?????敶寞?銝?砌???隞乩?蝵圈?</p>
+            <h3>2. 刑事責任</h3>
+            <p>若您無意購買卻惡意參與競標，導致賣方受有損害，可能構成《刑法》第 355 條「間接毀損罪」：意圖損害他人，以詐術使本人或第三人為財產上之處分，致生財產上之損害者，處三年以下有期徒刑、拘役或一萬五千元以下罰金。</p>
 
-            <h3>3. 撟喳?蔭</h3>
-            <p>撠璉???撟喳撠??單偶銋??董??銝血??賊?閮餃?鞈???IP 蝝??靘策鞈?振?梯郎??雿輻</p>
+            <h3>3. 平台處置</h3>
+            <p>對於棄標者，平台將立即永久封鎖帳號，並將相關註冊資料與 IP 紀錄提供給賣家報警提告使用。</p>
           </div>
         )}
 
         {activeTab === 'live' && (
           <div className="animate-fade-in">
-            <h2 className="text-2xl font-bold text-brand mb-6">瘣駁?鈭斗??</h2>
+            <h2 className="text-2xl font-bold text-brand mb-6">活體交易須知</h2>
             
-            <h3>1. 銝?其?憭拚?鞈?</h3>
-            <p>靘???鞎餉?霅瑟??洵 19 璇洵 1 ???貉?摰?隞亙?銵?Ｙ撣???鈭斗?閫?甈???憭?鈭?冽??洵 2 璇洵 1 甈橘????潸???摮????剜?閫???撠暹???瘣駁??????賜?改??潮???憌潮???銝剖??冽扔憭扯??賂???*銝?其?憭拚?鞈?銋?摰?*嚗?箏??? DOA ??璁???</p>
+            <h3>1. 不適用七天鑑賞期</h3>
+            <p>依據《消費者保護法》第 19 條第 1 項但書規定，以及行政院發布之《通訊交易解除權合理例外情事適用準則》第 2 條第 1 款：「易於腐敗、保存期限較短或解約時即將逾期」，活體動物因具備生命特性，於運送及飼養過程中存在極大變數，故**不適用七天鑑賞期之規定**，售出後非因 DOA 因素概不退換。</p>
 
-            <h3>2. 鞎瑟蝢拙?</h3>
-            <p>鞎瑕振?其?璅?鞈潸眺????</p>
+            <h3>2. 買方義務</h3>
+            <p>買家在下標或購買前，應：</p>
             <ul>
-              <li>??鈭圾閰脩蝔桃?憌潮??孵??憓?瘙?憌扼</li>
-              <li>蝣箄??芾澈???靘??拍?憌潮??啣?</li>
-              <li>??閬???剖??Ⅱ隤暑擃??</li>
+              <li>充分了解該物種的飼養方式、環境需求與食性。</li>
+              <li>確認自身有能力提供合適的飼養環境。</li>
+              <li>透過視訊或直播充分確認活體狀態。</li>
             </ul>
 
-            <h3>3. ?◢</h3>
-            <p>瘣駁????其?摰◢?芥眺?寞??⊿??豢?鞈?撱箄降?瘚撘?憒?鞎??乩噶?????啣?嚗鞎瑟??雿輻銝?拇?嚗?賢憭?DOA 靽?甈?</p>
+            <h3>3. 運送風險</h3>
+            <p>活體運送存在一定風險。買方應盡量選擇賣方建議的物流方式（如黑貓宅急便或超商店到店）。若買方堅持使用不當物流，可能喪失 DOA 保障權益。</p>
           </div>
         )}
       </div>
@@ -132,7 +132,7 @@ function LegalContent() {
 
 export default function LegalPage() {
   return (
-    <Suspense fallback={<div className="p-10 text-center">頛銝?..</div>}>
+    <Suspense fallback={<div className="p-10 text-center">載入中...</div>}>
       <LegalContent />
     </Suspense>
   );
