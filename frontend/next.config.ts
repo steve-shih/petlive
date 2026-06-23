@@ -20,17 +20,10 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         destination: 'http://127.0.0.1:5000/api/:path*',
       },
-      {
-        source: '/myapp/:path*',
-        destination: 'http://127.0.0.1:9000/myapp/:path*',
-      },
-      {
-        source: '/peer-api/socket.io',
-        destination: 'http://127.0.0.1:9000/socket.io/',
-      },
+
       {
         source: '/peer-api/:path*',
-        destination: 'http://127.0.0.1:9000/:path*',
+        destination: 'http://127.0.0.1:9000/peer-api/:path*',
       }
     ]
   },

@@ -1,4 +1,4 @@
-﻿const mode = process.env.LIVE_MODE;
+const mode = process.env.LIVE_MODE;
 
 if (mode === '2') {
   console.log('Starting in MODE 2: webrtc-tree Native WebRTC Server');
@@ -12,7 +12,7 @@ if (mode === '2') {
   
   // Support both direct socket.io connection and /myapp path for proxy
   const io = new Server(httpServer, {
-    path: '/socket.io',
+    path: '/peer-api/socket.io',
     cors: { origin: "*" }
   });
 
@@ -91,7 +91,7 @@ if (mode === '2') {
 
   const peerServer = PeerServer({ 
     port: 9000, 
-    path: '/myapp',
+    path: '/peer-api',
     allow_discovery: true,
     proxied: true
   });

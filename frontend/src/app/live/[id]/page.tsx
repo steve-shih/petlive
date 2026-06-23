@@ -596,7 +596,7 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
         const peerOptions = {
           host: window.location.hostname,
           port: window.location.port ? Number(window.location.port) : (window.location.protocol === 'https:' ? 443 : 80),
-          path: '/myapp',
+          path: '/peer-api',
           secure: window.location.protocol === 'https:',
           config: {
             iceServers: [
@@ -786,7 +786,7 @@ export default function LiveRoom({ params }: { params: Promise<{ id: string }> }
       const peerOptions = {
         host: window.location.hostname,
         port: window.location.port ? Number(window.location.port) : (window.location.protocol === 'https:' ? 443 : 80),
-        path: '/myapp',
+        path: '/peer-api',
         secure: window.location.protocol === 'https:',
         config: {
           iceServers: [
