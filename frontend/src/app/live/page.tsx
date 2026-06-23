@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "../components/Toast";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Video } from "lucide-react";
 
 interface LiveRoom {
   id: string;
@@ -26,10 +27,8 @@ export default function LiveLobby() {
   const [monitorRoom, setMonitorRoom] = useState<LiveRoom | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [liveConfig, setLiveConfig] = useState({
-    title: '我的寵物直播',
-    max_layers: 3,
-    layer_0_capacity: 4,
-    layer_n_capacity: 4
+    title: "",
+    totalViewers: 100, // Default viewers
   });
   const { showToast } = useToast();
 
@@ -112,10 +111,19 @@ export default function LiveLobby() {
   const submitLiveConfig = async (configOverride?: any) => {
     const config = configOverride || { ...liveConfig };
     if (!config.title) config.title = "我的寵物直播";
-    if (config.layer_0_capacity < 4) config.layer_0_capacity = 4;
-    if (config.layer_n_capacity < 1) config.layer_n_capacity = 1;
-    if (config.layer_n_capacity > 4) config.layer_n_capacity = 4;
     
+    // Auto-calculate layers based on total viewers
+    // Formula: sum(4^i) for i=0 to L
+    // L=1 -> 1+4=5
+    // L=2 -> 5+16=21
+    // L=3 -> 21+64=85
+    // L=4 -> 85+256=341
+    let computedLayers = 1;
+    if (config.totalViewers > 341) computedLayers = 5;
+    else if (config.totalViewers > 85) computedLayers = 4;
+    else if (config.totalViewers > 21) computedLayers = 3;
+    else if (config.totalViewers > 5) computedLayers = 2;
+
     setShowConfigModal(false);
 
     try {
@@ -125,9 +133,10 @@ export default function LiveLobby() {
         body: JSON.stringify({ 
            streamer_id: currentUser, 
            title: config.title,
-           max_layers: config.max_layers,
-           layer_0_capacity: config.layer_0_capacity,
-           layer_n_capacity: config.layer_n_capacity
+           max_layers: computedLayers,
+           layer_0_capacity: 4,
+           layer_n_capacity: 4,
+           max_viewers: config.totalViewers
         })
       });
       const data = await res.json();
@@ -151,9 +160,10 @@ export default function LiveLobby() {
           <div className="flex gap-2">
             <button 
               onClick={() => prepareLive(true)}
-              className="bg-brand text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-brand/90 transition-colors"
+              className="bg-brand text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg hover:bg-brand/90 transition-colors"
+              title="開始直播"
             >
-              🎥 開始直播
+              <Video size={20} strokeWidth={2.5} />
             </button>
             <button 
               onClick={() => prepareLive(false)}
@@ -227,21 +237,6 @@ export default function LiveLobby() {
           <div className="bg-surface border border-surface-hover rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl relative">
             <h2 className="text-2xl font-extrabold mb-4">⚙️ 進階 P2P 直播設定</h2>
             
-            <div className="bg-brand/10 border border-brand/30 p-4 rounded-xl mb-6 text-center">
-              <div className="text-sm text-text-secondary mb-1">根據目前設定，此直播間最大乘載人數</div>
-              <div className="text-4xl font-black text-brand">
-                {(() => {
-                  let total = liveConfig.layer_0_capacity;
-                  let currentLayer = liveConfig.layer_0_capacity;
-                  for (let i = 1; i < liveConfig.max_layers; i++) {
-                      currentLayer = currentLayer * liveConfig.layer_n_capacity;
-                      total += currentLayer;
-                  }
-                  return total;
-                })()} <span className="text-lg">人</span>
-              </div>
-            </div>
-
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm text-text-secondary mb-1">直播間標題</label>
@@ -252,38 +247,18 @@ export default function LiveLobby() {
                   className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2 text-sm focus:border-brand outline-none"
                 />
               </div>
-              <div>
-                <label className="block text-sm text-text-secondary mb-1">總層數限制 (max_layers)</label>
-                <input 
-                  type="number" min="1" max="10"
-                  value={liveConfig.max_layers} 
-                  onChange={e => setLiveConfig({...liveConfig, max_layers: parseInt(e.target.value)})}
-                  className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2 text-sm focus:border-brand outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-text-secondary mb-1">直播主自身乘載人數 (至少 4 人)</label>
-                <input 
-                  type="number" min="4" max="20"
-                  value={liveConfig.layer_0_capacity} 
-                  onChange={e => setLiveConfig({...liveConfig, layer_0_capacity: Math.max(4, parseInt(e.target.value) || 4)})}
-                  className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2 text-sm focus:border-brand outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-text-secondary mb-1">觀眾轉發乘載人數 (1~4 人)</label>
-                <input 
-                  type="number" min="1" max="4"
-                  value={liveConfig.layer_n_capacity} 
-                  onChange={e => {
-                     let val = parseInt(e.target.value) || 1;
-                     if (val < 1) val = 1;
-                     if (val > 4) val = 4;
-                     setLiveConfig({...liveConfig, layer_n_capacity: val});
-                  }}
-                  className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2 text-sm focus:border-brand outline-none"
-                />
-              </div>
+              <div className="flex flex-col">
+                  <label className="text-text-secondary font-bold mb-2">預計觀眾總人數</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="1000"
+                    className="p-3 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                    value={liveConfig.totalViewers}
+                    onChange={(e) => setLiveConfig({...liveConfig, totalViewers: parseInt(e.target.value) || 1})}
+                  />
+                  <p className="text-xs text-text-secondary mt-2">系統將自動以「每人最多傳輸給 4 人」的最佳實踐來配置您的網狀結構。</p>
+                </div>
             </div>
 
             <div className="flex gap-3">

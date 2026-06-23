@@ -15,7 +15,9 @@
     "peerjs": "^1.5.5",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "socket.io-client": "^4.7.2",
+    "webrtc-tree": "file:./webrtc-tree-1.0.5.tgz"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

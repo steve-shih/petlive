@@ -21,6 +21,7 @@ function ProfileContent() {
   const { showToast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [pricing, setPricing] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
   
   // Tab Management
   const initialTab = searchParams.get('tab') || 'dashboard';
@@ -41,6 +42,13 @@ function ProfileContent() {
     const res = await fetch(`/api/users/${userId}`, { headers: { "ngrok-skip-browser-warning": "69420" } });
     const data = await res.json();
     setUser(data);
+    
+    // 載入通知
+    const notifRes = await fetch(`/api/notifications/${userId}`, { headers: { "ngrok-skip-browser-warning": "69420" } });
+    if (notifRes.ok) {
+      const notifs = await notifRes.json();
+      setNotifications(notifs);
+    }
   };
 
   const loadPricing = async () => {
@@ -109,6 +117,30 @@ function ProfileContent() {
       }
     } catch (err) {
       showToast("更新失敗", "error");
+    }
+  };
+
+  const saveSettings = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get('name') as string,
+      phone: formData.get('phone') as string,
+    };
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        showToast("帳號設定更新成功！", "success");
+        loadUser();
+      } else {
+        showToast("更新失敗", "error");
+      }
+    } catch (err) {
+      showToast("發生錯誤", "error");
     }
   };
 
@@ -266,14 +298,24 @@ function ProfileContent() {
             <div className="animate-fade-in">
               <h2 className="text-2xl font-bold mb-6">🔔 通知中心</h2>
               <div className="space-y-4">
-                <div className="p-4 bg-brand/10 border border-brand/30 rounded-xl flex gap-4">
-                  <div className="text-2xl">🎉</div>
-                  <div>
-                    <h4 className="font-bold text-brand">歡迎加入 PetLive</h4>
-                    <p className="text-sm text-text-secondary">您已成功註冊並成為會員，開始探索各種珍奇異獸吧！</p>
-                    <span className="text-xs text-text-secondary mt-1 block">剛剛</span>
+                {notifications.length === 0 ? (
+                  <div className="text-center py-12 text-text-secondary bg-surface rounded-xl border border-surface/50">
+                    目前沒有任何通知
                   </div>
-                </div>
+                ) : (
+                  notifications.map(notif => (
+                    <div key={notif.id} className={`p-4 border rounded-xl flex gap-4 ${notif.read ? 'bg-surface border-surface/50 opacity-70' : 'bg-brand/10 border-brand/30'}`}>
+                      <div className="text-2xl">{notif.title.includes('歡迎') ? '🎉' : '🔔'}</div>
+                      <div>
+                        <h4 className={`font-bold ${notif.read ? 'text-text-primary' : 'text-brand'}`}>{notif.title}</h4>
+                        <p className="text-sm text-text-secondary">{notif.content}</p>
+                        <span className="text-xs text-text-secondary mt-1 block">
+                          {new Date(notif.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -281,22 +323,22 @@ function ProfileContent() {
           {activeMenu === 'settings' && (
             <div className="animate-fade-in">
               <h2 className="text-2xl font-bold mb-6">⚙️ 帳號設定</h2>
-              <div className="space-y-6 max-w-2xl">
+              <form onSubmit={saveSettings} className="space-y-6 max-w-2xl">
                 <div className="bg-surface border border-surface/50 p-6 rounded-xl">
                   <h3 className="font-bold mb-4 border-b border-surface/50 pb-2">個人檔案</h3>
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm text-text-secondary block mb-1">顯示名稱</label>
-                      <input type="text" defaultValue={user.name} className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2" />
+                      <input name="name" type="text" defaultValue={user.name} className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2" required />
                     </div>
                     <div>
                       <label className="text-sm text-text-secondary block mb-1">手機號碼</label>
-                      <input type="text" defaultValue={user.phone} className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2" readOnly />
+                      <input name="phone" type="text" defaultValue={user.phone} className="w-full bg-background border border-surface-hover rounded-lg px-4 py-2" />
                     </div>
                   </div>
                 </div>
-                <button className="bg-brand text-white px-6 py-2 rounded-lg font-bold hover:bg-brand/90 transition-colors">儲存設定</button>
-              </div>
+                <button type="submit" className="bg-brand text-white px-6 py-2 rounded-lg font-bold hover:bg-brand/90 transition-colors">儲存設定</button>
+              </form>
             </div>
           )}
 
@@ -419,31 +461,73 @@ function ProfileContent() {
                 </div>
               )}
 
-              {/* Admin Pricing Panel */}
+              {/* Admin Panel */}
               {user.role === 'ADMIN' && (
-                <div className="mt-12 bg-red-500/10 border border-red-500/30 p-6 rounded-xl">
-                  <h3 className="font-bold text-red-500 mb-4 flex items-center gap-2">⚙️ [管理員] 定價設定</h3>
-                  <form onSubmit={savePricing} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs text-text-secondary block mb-1">一般買賣定價</label>
-                      <input name="tier_1_price" type="number" defaultValue={pricing.tier_1_price} className="w-full bg-background border border-surface rounded px-3 py-2" required />
-                    </div>
-                    <div>
-                      <label className="text-xs text-text-secondary block mb-1">買賣競標定價</label>
-                      <input name="tier_2_price" type="number" defaultValue={pricing.tier_2_price} className="w-full bg-background border border-surface rounded px-3 py-2" required />
-                    </div>
-                    <div>
-                      <label className="text-xs text-text-secondary block mb-1">直播帶貨定價</label>
-                      <input name="tier_3_price" type="number" defaultValue={pricing.tier_3_price} className="w-full bg-background border border-surface rounded px-3 py-2" required />
-                    </div>
-                    <div>
-                      <label className="text-xs text-text-secondary block mb-1">高流量加值定價</label>
-                      <input name="high_traffic_price" type="number" defaultValue={pricing.high_traffic_price} className="w-full bg-background border border-surface rounded px-3 py-2" required />
-                    </div>
-                    <div className="md:col-span-2 mt-2">
-                      <button type="submit" className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded font-bold transition-colors">儲存新定價</button>
-                    </div>
-                  </form>
+                <div className="space-y-6 mt-12">
+                  {/* System Settings */}
+                  <div className="bg-red-500/10 border border-red-500/30 p-6 rounded-xl">
+                    <h3 className="font-bold text-red-500 mb-4 flex items-center gap-2">⚙️ [管理員] 系統全域設定</h3>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      const data = {
+                        marquee_enabled: formData.get('marquee_enabled') === 'true',
+                        marquee_text: formData.get('marquee_text') as string
+                      };
+                      try {
+                        const res = await fetch('/api/system/settings', {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(data)
+                        });
+                        if (res.ok) showToast("系統設定更新成功", "success");
+                        else showToast("系統設定更新失敗", "error");
+                      } catch (err) {
+                        showToast("發生錯誤", "error");
+                      }
+                    }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-text-secondary block mb-1">首頁跑馬燈 (啟用/停用)</label>
+                        <select name="marquee_enabled" className="w-full bg-background border border-surface rounded px-3 py-2">
+                          <option value="true">啟用</option>
+                          <option value="false">停用</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-text-secondary block mb-1">跑馬燈文字內容</label>
+                        <input name="marquee_text" type="text" defaultValue="目前為開發或維護期" className="w-full bg-background border border-surface rounded px-3 py-2" required />
+                      </div>
+                      <div className="md:col-span-2 mt-2">
+                        <button type="submit" className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded font-bold transition-colors">儲存系統設定</button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Pricing Settings */}
+                  <div className="bg-red-500/10 border border-red-500/30 p-6 rounded-xl">
+                    <h3 className="font-bold text-red-500 mb-4 flex items-center gap-2">⚙️ [管理員] 定價設定</h3>
+                    <form onSubmit={savePricing} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-text-secondary block mb-1">一般買賣定價</label>
+                        <input name="tier_1_price" type="number" defaultValue={pricing.tier_1_price} className="w-full bg-background border border-surface rounded px-3 py-2" required />
+                      </div>
+                      <div>
+                        <label className="text-xs text-text-secondary block mb-1">買賣競標定價</label>
+                        <input name="tier_2_price" type="number" defaultValue={pricing.tier_2_price} className="w-full bg-background border border-surface rounded px-3 py-2" required />
+                      </div>
+                      <div>
+                        <label className="text-xs text-text-secondary block mb-1">直播帶貨定價</label>
+                        <input name="tier_3_price" type="number" defaultValue={pricing.tier_3_price} className="w-full bg-background border border-surface rounded px-3 py-2" required />
+                      </div>
+                      <div>
+                        <label className="text-xs text-text-secondary block mb-1">高流量加值定價</label>
+                        <input name="high_traffic_price" type="number" defaultValue={pricing.high_traffic_price} className="w-full bg-background border border-surface rounded px-3 py-2" required />
+                      </div>
+                      <div className="md:col-span-2 mt-2">
+                        <button type="submit" className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded font-bold transition-colors">儲存新定價</button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               )}
             </div>
@@ -623,6 +707,61 @@ function ProfileContent() {
                   </button>
                 </Link>
               </div>
+              
+              <h2 className="text-xl font-bold mb-4">🎥 直播回放管理 (VOD)</h2>
+              {user.my_vods?.length === 0 ? (
+                <div className="text-center py-12 text-text-secondary bg-surface rounded-2xl border border-surface/50 mb-8">
+                   <div className="text-4xl mb-4">🎥</div>
+                   <h3 className="text-lg font-bold">尚無回放紀錄</h3>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                  {user.my_vods?.map((vod: any) => (
+                     <div key={vod.id} className="bg-surface border border-surface/50 rounded-xl p-4 flex flex-col justify-between">
+                        <div>
+                           <h3 className="font-bold mb-2 truncate">{vod.title}</h3>
+                           <p className="text-xs text-text-secondary mb-1">建立時間：{new Date(vod.vod_created_at).toLocaleString()}</p>
+                           {vod.vod_is_permanent ? (
+                              <p className="text-xs text-green-500 font-bold mb-3">✅ 已付費永久保存</p>
+                           ) : (
+                              <p className="text-xs text-brand font-bold mb-3">
+                                 ⚠️ 將於 {new Date(vod.vod_expires_at).toLocaleString()} 刪除
+                              </p>
+                           )}
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                           <Link href={`/live/${vod.id}`} className="flex-1">
+                              <button className="w-full py-1.5 bg-surface-hover text-sm font-bold rounded border border-surface/50 hover:border-brand hover:text-brand transition-colors">
+                                 觀看影片
+                              </button>
+                           </Link>
+                           {!vod.vod_is_permanent && (
+                              <button 
+                                 onClick={async () => {
+                                    if(confirm("確定要將此影片永久保存嗎？")) {
+                                       try {
+                                          const res = await fetch(`/api/live/rooms/${vod.id}/vod/extend`, { method: "POST" });
+                                          if(res.ok) {
+                                             showToast("永久保存設定成功！", "success");
+                                             loadUser();
+                                          } else {
+                                             showToast("操作失敗", "error");
+                                          }
+                                       } catch (e) {
+                                          showToast("發生錯誤", "error");
+                                       }
+                                    }
+                                 }}
+                                 className="flex-1 py-1.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-md text-sm font-bold rounded hover:opacity-90 transition-opacity"
+                              >
+                                 ✨ 永久保存
+                              </button>
+                           )}
+                        </div>
+                     </div>
+                  ))}
+                </div>
+              )}
 
               <h2 className="text-xl font-bold mb-4">📦 商品管理</h2>
               {user.my_products?.length === 0 ? (

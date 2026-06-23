@@ -1,12 +1,28 @@
-{
+﻿{
   "database": {
-    "mongo_uri": "mongodb+srv://shihcarl_db_user:yYoKdzstKkas1T5r@cluster0.5j6fbvu.mongodb.net/petlive?appName=Cluster0",
-    "db_name": "petlive"
+    "mongo_uri": "mongodb+srv://shihcarl_db_user:yYoKdzstKkas1T5r@cluster0.5j6fbvu.mongodb.net/petbar?appName=Cluster0",
+    "db_name": "petbar"
   },
   "upload": {
     "folder_name": "uploads"
   },
   "auth": {
     "google_client_id": "788146443516-97ieiv3lpoauiehkpk7cnqnv82tqgh0v.apps.googleusercontent.com"
+  },
+  "live": {
+    "default_max_layers": 3,
+    "default_layer_capacity": 4,
+    "default_total_viewers": 200,
+    "default_base_delay": 1000,
+    "default_layer_delay": 300,
+    "default_password": "",
+    "default_blur_preview": false,
+    "default_noise_suppression": true,
+    "default_beauty_filter": false,
+    "default_bg_blur": false
+  },
+  "system": {
+    "marquee_enabled": true,
+    "marquee_text": "?桀??粹??潭?蝬剛風??
   }
 }

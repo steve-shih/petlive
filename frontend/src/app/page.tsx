@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface Product {
   id: string;
@@ -21,6 +22,7 @@ interface ProductResponse {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [hotProducts, setHotProducts] = useState<Product[]>([]);
   const [latestProducts, setLatestProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,13 +30,22 @@ export default function Home() {
   const [subCategory, setSubCategory] = useState<string>("ALL");
   const [filterFollowed, setFilterFollowed] = useState<boolean>(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [systemSettings, setSystemSettings] = useState<any>(null);
 
   const loadProducts = () => {
     setLoading(true);
     const userId = localStorage.getItem("current_user_id");
+    const hasSeenWelcome = localStorage.getItem("has_seen_welcome");
+    
+    if (!userId && !hasSeenWelcome) {
+      router.push("/welcome");
+      return;
+    }
+    
     setCurrentUserId(userId);
     
-    let url = "/api/products?";
+    // 加入時間戳記作為 Cache Buster，強制繞過手機上頑固的 308 快取
+    let url = `/api/products?_cb=${new Date().getTime()}&`;
     if (mainCategory !== "ALL") url += `main_category=${mainCategory}&`;
     if (subCategory !== "ALL") url += `sub_category=${subCategory}&`;
     url += `filter_followed=${filterFollowed}&`;
@@ -56,6 +67,13 @@ export default function Home() {
   useEffect(() => {
     loadProducts();
   }, [mainCategory, subCategory, filterFollowed]);
+
+  useEffect(() => {
+    fetch("/api/system/settings", { headers: { "ngrok-skip-browser-warning": "69420" } })
+      .then(res => res.json())
+      .then(data => setSystemSettings(data))
+      .catch(console.error);
+  }, []);
 
   const handleMainCategoryClick = (cat: string) => {
     setMainCategory(cat);
@@ -113,11 +131,25 @@ export default function Home() {
 
   return (
     <div className="w-full max-w-6xl p-4 md:p-6">
+      {systemSettings?.marquee_enabled && (
+        <div className="w-full bg-red-500/10 border border-red-500/20 text-red-400 py-2 px-4 rounded-xl mb-4 overflow-hidden flex items-center shadow-inner">
+          <span className="mr-2">📢</span>
+          <div className="flex-1 overflow-hidden relative">
+            <div className="whitespace-nowrap animate-[marquee_15s_linear_infinite] inline-block font-bold">
+              {systemSettings.marquee_text || "目前為開發或維護期"}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Banner */}
       <div className="w-full h-64 bg-gradient-to-r from-brand to-brand/70 rounded-2xl flex items-center justify-center mb-8 shadow-lg relative overflow-hidden">
         <div className="relative z-10 text-center text-white">
           <h1 className="text-4xl font-bold mb-4 tracking-wider">歡迎來到 寵BAR</h1>
-          <p className="text-lg opacity-90">尋找屬於你的特殊寵物夥伴</p>
+          <p className="text-lg opacity-90">進入寵物交流</p>
+          <div className="mt-4 inline-block bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full text-sm font-bold border border-yellow-500/50">
+            🚧 平台開發維護中，即將正式上線！
+          </div>
         </div>
       </div>
 
@@ -157,16 +189,31 @@ export default function Home() {
         </div>
         
         {mainCategory === "活體" && (
-          <div className="flex flex-wrap gap-2">
-            {["ALL", "貓狗", "爬蟲", "甲蟲", "其他"].map(sub => (
-              <button
-                key={sub}
-                onClick={() => setSubCategory(sub)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${subCategory === sub ? 'bg-brand text-white border-brand' : 'bg-surface text-text-secondary border-surface/50 hover:border-brand/50'}`}
-              >
-                {sub === "ALL" ? "全部" : sub}
-              </button>
-            ))}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2">
+              {["ALL", "貓狗", "爬蟲", "甲蟲", "其他"].map(sub => (
+                <button
+                  key={sub}
+                  onClick={() => setSubCategory(sub)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${subCategory === sub ? 'bg-brand text-white border-brand' : 'bg-surface text-text-secondary border-surface/50 hover:border-brand/50'}`}
+                >
+                  {sub === "ALL" ? "全部" : sub}
+                </button>
+              ))}
+            </div>
+            
+            {(subCategory === "爬蟲" || subCategory === "甲蟲" || subCategory === "ALL") && (
+              <div className="text-xs text-brand bg-brand/10 p-2 rounded-lg border border-brand/20 flex items-start gap-2">
+                <span>⚠️</span>
+                <span>平台嚴禁買賣「保育類」或「非法野生捕捉」之爬蟲、甲蟲動物，違者將永久停權。</span>
+              </div>
+            )}
+            {(subCategory === "貓狗" || subCategory === "ALL") && (
+              <div className="text-xs text-blue-400 bg-blue-500/10 p-2 rounded-lg border border-blue-500/20 flex items-start gap-2">
+                <span>ℹ️</span>
+                <span>貓狗活體買賣與認養必須符合當地政府動保法規，賣家須合法標示特定寵物業許可證號。</span>
+              </div>
+            )}
           </div>
         )}
 

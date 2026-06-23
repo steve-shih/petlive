@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { ToastProvider } from "./components/Toast";
 import { ThemeProvider } from "./components/ThemeContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -6,8 +6,8 @@ import LayoutWrapper from "./components/LayoutWrapper";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "寵BAR - PetLive",
-  description: "全台最大的特殊寵物即時競標與直播平台",
+  title: "撖湎AR - PetBar",
+  description: "?典?憭抒??寞?撖萇?單?蝡嗆???剖像??,
 };
 
 export default function RootLayout({

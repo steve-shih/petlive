@@ -25,3 +25,6 @@ Thumbs.db
 
 # Project specific
 test_db.py
+
+backend/gcp-service-account.json
+backend/uploads/
