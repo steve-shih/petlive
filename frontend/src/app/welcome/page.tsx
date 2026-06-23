@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -93,10 +93,10 @@ export default function WelcomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {[
-              { icon: "?", title: "??", desc: "蝪∪敹恍酉?????撅祆?蜓?? },
-              { icon: "?", title: "撠窄蝡嗆?", desc: "??擃???哨???????曉???孵秘?? },
-              { icon: "??", title: "摰?蝪賜?", desc: "撠惇?祉??餃???嚗????嫣漱???具? },
-              { icon: "??", title: "摰?啣?", desc: "摰???DOA 瘣駁?靽???憟瘚頂蝯晞? }
+              { icon: "1", title: "Step 1", desc: "Step 1 desc" },
+              { icon: "2", title: "Step 2", desc: "Step 2 desc" },
+              { icon: "3", title: "Step 3", desc: "Step 3 desc" },
+              { icon: "4", title: "Step 4", desc: "Step 4 desc" }
             ].map((step, idx) => (
               <FadeIn key={idx} delay={idx * 200}>
                 <div className="bg-surface border border-surface/50 rounded-2xl p-8 h-full hover:border-brand/50 hover:-translate-y-2 transition-all duration-300 shadow-xl relative overflow-hidden group">
@@ -130,11 +130,11 @@ export default function WelcomePage() {
                 </div>
                 <ul className="space-y-6">
                   {[
-                    "蝬虜?⊿?霅血???剛?鞎潭?",
-                    "瞍?瘜?瘚?閫詨??扔雿?,
-                    "鞎瑁都??∠洵銝??靽?",
-                    "閰??餃嚗撩銋祕??摨振隤?",
-                    "蝟餌絞銝?湔暑擃漱???寞?
+                    "Item 1",
+                    "Item 2",
+                    "Item 3",
+                    "Item 4",
+                    "Item 5"
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-text-secondary">
                       <span className="mt-1 text-red-500/70 text-sm"></span>
@@ -157,7 +157,7 @@ export default function WelcomePage() {
                     "摰????嚗???敹◤撠?",
                     "蝎暹??嚗撱箇雯?蝬脰楝蝣箔??湔瘚",
                     "?訾??祉?蝪賜?蝟餌絞嚗?閬???摰?",
-                    "?湔鞈?振隤??眺摰嗡?霅瑟???,
+                    "Item 4",
                     "撠惇?孵秘? (憒??箏?閮?璈?"
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-white">

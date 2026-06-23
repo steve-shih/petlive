@@ -158,26 +158,26 @@ export default function SettingsPage() {
         <h2 className="text-xl font-bold mb-4">撣貊?撣?/ 蝡?</h2>
         <div className="space-y-6">
           <div>
-            <label className="block font-bold mb-2">撣貊 7-11 ?疏?撣?/label>
+            <label className="block font-bold mb-2">7-11</label>
             <input 
               type="text"
               value={formData.sevenElevenStore}
               onChange={(e) => setFormData({...formData, sevenElevenStore: e.target.value})}
-              placeholder="摨?????
+              placeholder="Store Name"
               className="w-full bg-background border border-surface focus:border-brand rounded-xl px-4 py-3 text-text-primary focus:outline-none"
             />
           </div>
           <div>
-            <label className="block font-bold mb-2">撣貊蝛箄?銝??暺?/label>
+            <label className="block font-bold mb-2">撣貊蝛箄?銝??暺</label>
             <select 
               value={formData.airForceOneStation}
               onChange={(e) => setFormData({...formData, airForceOneStation: e.target.value})}
               className="w-full bg-background border border-surface focus:border-brand rounded-xl px-4 py-3 text-text-primary focus:outline-none"
             >
               <option value="">-- ?芾身摰?--</option>
-              <option value="TPE">?啣?蝡?/option>
-              <option value="TXG">?唬葉蝡?/option>
-              <option value="KHH">擃?蝡?/option>
+              <option value="TPE">?啣?蝡</option>
+              <option value="TXG">?唬葉蝡</option>
+              <option value="KHH">擃?蝡</option>
             </select>
           </div>
         </div>

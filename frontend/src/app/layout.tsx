@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "撖湎AR - PetBar",
-  description: "?典?憭抒??寞?撖萇?單?蝡嗆???剖像??,
+  description: "PetBar",
 };
 
 export default function RootLayout({

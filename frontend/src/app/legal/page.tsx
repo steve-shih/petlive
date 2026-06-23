@@ -15,7 +15,7 @@ function LegalContent() {
     <div className="w-full max-w-6xl p-4 md:p-8 flex flex-col md:flex-row gap-8">
       {/* Sidebar */}
       <div className="w-full md:w-64 shrink-0">
-        <h1 className="text-3xl font-black mb-6">瘜??蝑?/h1>
+        <h1 className="text-3xl font-black mb-6">Legal</h1>
         <div className="flex flex-col space-y-2">
           <button 
             onClick={() => setActiveTab('terms')}
