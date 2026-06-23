@@ -1,7 +1,7 @@
-import os
+﻿import os
 import re
 
-src_dir = r"c:\Users\beaut\.gemini\antigravity-ide\scratch\petlive\frontend\src"
+src_dir = r"c:\Users\beaut\.gemini\antigravity-ide\scratch\petbar\frontend\src"
 
 def add_header_to_fetch(content):
     # Regex to find fetch('...') or fetch(`...`)

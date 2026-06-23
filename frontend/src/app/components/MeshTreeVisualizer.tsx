@@ -55,7 +55,12 @@ export default function MeshTreeVisualizer({
 
     const fetchTree = async () => {
       try {
-        const res = await fetch(`/api/live/rooms/${roomId}/tree`, {
+        const isMode2 = process.env.NEXT_PUBLIC_LIVE_MODE === '2';
+        const url = isMode2 
+          ? `/peer-api/tree/${roomId}`
+          : `/api/live/rooms/${roomId}/tree`;
+
+        const res = await fetch(url, {
             headers: { "ngrok-skip-browser-warning": "69420" }
         });
         const data = await res.json();

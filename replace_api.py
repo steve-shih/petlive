@@ -1,6 +1,6 @@
-import os
+﻿import os
 
-src_dir = r"c:\Users\beaut\.gemini\antigravity-ide\scratch\petlive\frontend\src"
+src_dir = r"c:\Users\beaut\.gemini\antigravity-ide\scratch\petbar\frontend\src"
 
 for root, dirs, files in os.walk(src_dir):
     for file in files:

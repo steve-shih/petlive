@@ -427,6 +427,18 @@ def send_live_message():
 # 影片上傳路由保留在此或獨立至 media_controller
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+from google.cloud import storage
+
+# Initialize GCS client globally (will use GOOGLE_APPLICATION_CREDENTIALS)
+# Fallback to local if no credentials (optional)
+try:
+    gcs_client = storage.Client()
+    bucket_name = "petpa"
+    bucket = gcs_client.bucket(bucket_name)
+    use_gcs = True
+except Exception as e:
+    print(f"Failed to initialize GCS client: {e}")
+    use_gcs = False
 
 @live_bp.route('/upload-record', methods=['POST'])
 def upload_live_record():
@@ -458,10 +470,19 @@ def upload_live_record():
         return jsonify({'error': 'No selected file'}), 400
         
     filename = f"{user_id}_{room_id}_{int(time.time())}.webm"
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-    video.save(filepath)
     
-    media_url = f"/uploads/{filename}"
+    if use_gcs:
+        blob = bucket.blob(f"petbar_vods/{filename}")
+        # Upload from file object
+        blob.upload_from_file(video, content_type=video.content_type)
+        # Make public
+        blob.make_public()
+        media_url = blob.public_url
+    else:
+        # Fallback to local
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        video.save(filepath)
+        media_url = f"/uploads/{filename}"
     
     db = Database.get_db()
     media_doc = {
@@ -471,7 +492,25 @@ def upload_live_record():
         "type": "LIVE_RECORD",
         "url": media_url,
         "status": "PRIVATE",
-        "created_at": datetime.utcnow().isoformat()
+        "created_at": datetime.utcnow().isoformat(),
+        "is_permanent": False
     }
     db.media.insert_one(media_doc)
     return jsonify({'message': 'Video uploaded successfully', 'media': media_doc})
+
+@live_bp.route('/record/<record_id>/upgrade', methods=['POST'])
+def upgrade_record(record_id):
+    """
+    手動升級錄影檔為永久保存
+    """
+    db = Database.get_db()
+    result = db.media.update_one(
+        {"id": record_id},
+        {"$set": {"is_permanent": True}}
+    )
+    
+    if result.matched_count == 0:
+        return jsonify({'error': 'Record not found'}), 404
+        
+    print(f"[ADMIN_NOTIFICATION] User requested permanent upgrade for record {record_id}")
+    return jsonify({'message': 'Record upgraded to permanent successfully'})

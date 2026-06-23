@@ -1,4 +1,4 @@
-import os
+﻿import os
 from flask import Flask
 from flask_cors import CORS
 from models import db, generate_uuid
@@ -12,7 +12,7 @@ from flasgger import Swagger
 app = Flask(__name__, static_folder='uploads', static_url_path='/uploads')
 CORS(app)
 
-# 初始化 Swagger (API 文件)
+# ????Swagger (API ?辣)
 swagger_config = {
     "headers": [],
     "specs": [
@@ -30,8 +30,8 @@ swagger_config = {
 
 swagger_template = {
     "info": {
-        "title": "寵BAR - PetLive API",
-        "description": "這是 PetLive 活體競標與直播平台的 API 文件。所有的 API 都在此定義與測試。",
+        "title": "撖湎AR - PetBar API",
+        "description": "? PetBar 瘣駁?蝡嗆???剖像?啁? API ?辣???? API ?賢甇文?蝢抵?皜祈岫??,
         "version": "1.0.0"
     }
 }

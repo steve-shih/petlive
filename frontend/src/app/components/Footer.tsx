@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 
 export default function Footer() {
   return (
@@ -8,47 +8,46 @@ export default function Footer() {
 
           <div className="col-span-1 md:col-span-2">
             <Link href="/" className="flex items-center space-x-2 text-2xl font-black text-brand mb-4">
-              <span>🦎</span>
-              <span>PetLive</span>
+              <span>??</span>
+              <span>PetBar</span>
             </Link>
             <p className="text-text-secondary mb-4 leading-relaxed max-w-sm">
-              全台首創特寵直播競標平台。專為合法業者打造，解決傳統社群平台（如 FB、TikTok）無故封鎖、限流的困擾，提供最自由、安心的展售空間。
-            </p>
+              ?典擐?孵秘?湔蝡嗆?撟喳???箏?瘜平????閫?捱?喟絞蝷曄黎撟喳嚗? FB?ikTok嚗????瘚??唳嚗?靘??芰??敹?撅蝛粹???            </p>
             <div className="flex space-x-4">
-              <button onClick={() => alert("敬請期待 iOS App！")} className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors cursor-pointer border-none outline-none">📱</button>
-              <button onClick={() => alert("敬請期待 Instagram 官方帳號！")} className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors cursor-pointer border-none outline-none">📷</button>
-              <button onClick={() => alert("敬請期待 LINE 官方帳號！")} className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors cursor-pointer border-none outline-none">💬</button>
+              <button onClick={() => alert("?祈??? iOS App嚗?)} className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors cursor-pointer border-none outline-none">?</button>
+              <button onClick={() => alert("?祈??? Instagram 摰撣唾?嚗?)} className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors cursor-pointer border-none outline-none">?</button>
+              <button onClick={() => alert("?祈??? LINE 摰撣唾?嚗?)} className="w-10 h-10 rounded-full bg-surface-hover flex items-center justify-center text-xl hover:bg-brand hover:text-white transition-colors cursor-pointer border-none outline-none">?</button>
             </div>
           </div>
 
           <div>
-            <h3 className="font-bold text-lg mb-4 text-white">了解更多</h3>
+            <h3 className="font-bold text-lg mb-4 text-white">鈭圾?游?</h3>
             <ul className="space-y-3 text-text-secondary">
-              <li><Link href="/about" className="hover:text-brand transition-colors">關於我們</Link></li>
-              <li><Link href="/about?tab=features" className="hover:text-brand transition-colors">平台特色</Link></li>
-              <li><Link href="/about?tab=certification" className="hover:text-brand transition-colors">賣家認證制度</Link></li>
-              <li><Link href="/live" className="hover:text-brand transition-colors">最新直播</Link></li>
+              <li><Link href="/about" className="hover:text-brand transition-colors">???/Link></li>
+              <li><Link href="/about?tab=features" className="hover:text-brand transition-colors">撟喳?寡</Link></li>
+              <li><Link href="/about?tab=certification" className="hover:text-brand transition-colors">鞈?振隤??嗅漲</Link></li>
+              <li><Link href="/live" className="hover:text-brand transition-colors">??啁??/Link></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-bold text-lg mb-4 text-white">服務與幫助</h3>
+            <h3 className="font-bold text-lg mb-4 text-white">???鼠??/h3>
             <ul className="space-y-3 text-text-secondary">
-              <li><Link href="/help" className="hover:text-brand transition-colors">幫助中心</Link></li>
-              <li><Link href="/help?tab=doa" className="hover:text-brand transition-colors">DOA 活體保障</Link></li>
-              <li><Link href="/help?tab=seller" className="hover:text-brand transition-colors">賣家上架指南</Link></li>
-              <li><Link href="/legal" className="hover:text-brand transition-colors">法律與政策</Link></li>
+              <li><Link href="/help" className="hover:text-brand transition-colors">撟怠銝剖?</Link></li>
+              <li><Link href="/help?tab=doa" className="hover:text-brand transition-colors">DOA 瘣駁?靽?</Link></li>
+              <li><Link href="/help?tab=seller" className="hover:text-brand transition-colors">鞈?振銝??</Link></li>
+              <li><Link href="/legal" className="hover:text-brand transition-colors">瘜??蝑?/Link></li>
             </ul>
           </div>
 
         </div>
 
         <div className="pt-8 border-t border-surface/50 text-center text-text-secondary text-sm flex flex-col md:flex-row justify-between items-center gap-4">
-          <p>live.petpa.tw 2026 版權所有</p>
+          <p>live.petpa.tw 2026 ?????/p>
           <div className="flex space-x-6">
-            <Link href="/legal?tab=terms" className="hover:text-brand transition-colors">使用條款</Link>
-            <Link href="/legal?tab=privacy" className="hover:text-brand transition-colors">隱私政策</Link>
-            <Link href="/legal?tab=live" className="hover:text-brand transition-colors">活體交易須知</Link>
+            <Link href="/legal?tab=terms" className="hover:text-brand transition-colors">雿輻璇狡</Link>
+            <Link href="/legal?tab=privacy" className="hover:text-brand transition-colors">?梁??輻?</Link>
+            <Link href="/legal?tab=live" className="hover:text-brand transition-colors">瘣駁?鈭斗??</Link>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+﻿from flask import Blueprint, jsonify, request
 from models import db, generate_uuid
 from datetime import datetime
 import os
@@ -17,21 +17,21 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @api_bp.route('/upload', methods=['POST'])
 def upload_file():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "upload_file API"
-    description: "這個 API 會執行 upload_file 操作。"
+    description: "??API ?銵?upload_file ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -49,21 +49,21 @@ def upload_file():
 @api_bp.route('/users', methods=['GET'])
 def get_all_users():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "get_all_users API"
-    description: "這個 API 會執行 get_all_users 操作。"
+    description: "??API ?銵?get_all_users ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     users = list(db.users.find({}, {"_id": 0}))
     return jsonify([{
@@ -77,40 +77,40 @@ def get_all_users():
 @api_bp.route('/auth/login', methods=['POST'])
 def login():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "login API"
-    description: "這個 API 會執行 login 操作。"
+    description: "??API ?銵?login ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     phone_or_email = data.get('username')
     password = data.get('password')
     # Mock validation: Accept any non-empty password for now
     if not phone_or_email or not password:
-        return jsonify({'error': '請輸入帳號與密碼'}), 400
+        return jsonify({'error': '隢撓?亙董??撖Ⅳ'}), 400
         
     # Find user by phone, email, or just name (mock)
     user = db.users.find_one({"$or": [{"phone": phone_or_email}, {"email": phone_or_email}, {"name": phone_or_email}]})
     if not user:
-        return jsonify({'error': '帳號不存在'}), 401
+        return jsonify({'error': '撣唾?銝???}), 401
         
     # Check password
     if user.get('password') and user.get('password') != password:
-        return jsonify({'error': '密碼錯誤'}), 401
+        return jsonify({'error': '撖Ⅳ?航炊'}), 401
         
     return jsonify({
-        'message': '登入成功',
+        'message': '?餃??',
         'user': {
             'id': user.get('id'),
             'name': user.get('name'),
@@ -125,21 +125,21 @@ from google.auth.transport import requests as google_requests
 @api_bp.route('/auth/google', methods=['POST'])
 def google_login():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "google_login API"
-    description: "這個 API 會執行 google_login 操作。"
+    description: "??API ?銵?google_login ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     token = data.get('token')
@@ -147,7 +147,7 @@ def google_login():
         return jsonify({'error': 'Missing token'}), 400
         
     try:
-        # 由 ConfigLoader 讀取設定檔
+        # ??ConfigLoader 霈?身摰?
         from infrastructure.config_loader import ConfigLoader
         client_id = ConfigLoader.get('auth', 'google_client_id', '788146443516-97ieiv3lpoauiehkpk7cnqnv82tqgh0v.apps.googleusercontent.com')
         
@@ -159,7 +159,7 @@ def google_login():
         google_id = idinfo.get('sub')
         
         if not email:
-            return jsonify({'error': '無法取得 Google Email'}), 400
+            return jsonify({'error': '?⊥??? Google Email'}), 400
             
         # Find user
         user = db.users.find_one({"email": email})
@@ -180,7 +180,7 @@ def google_login():
             user = new_user
             
         return jsonify({
-            'message': 'Google 登入成功',
+            'message': 'Google ?餃??',
             'user': {
                 'id': user.get('id'),
                 'name': user.get('name'),
@@ -191,7 +191,7 @@ def google_login():
         
     except ValueError as e:
         print(f"Google Token error: {e}")
-        return jsonify({'error': 'Google Token 驗證失敗'}), 401
+        return jsonify({'error': 'Google Token 撽?憭望?'}), 401
 
 import jwt
 import requests
@@ -199,28 +199,28 @@ import requests
 @api_bp.route('/auth/line', methods=['POST'])
 def line_login():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "line_login API"
-    description: "這個 API 會執行 line_login 操作。"
+    description: "??API ?銵?line_login ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     code = data.get('code')
     redirect_uri = data.get('redirect_uri')
     
     if not code or not redirect_uri:
-        return jsonify({'error': '缺少授權碼'}), 400
+        return jsonify({'error': '蝻箏???蝣?}), 400
         
     channel_id = "2010452149"
     channel_secret = "12a894a8f62cf0d08b8c4dd6dce53394"
@@ -241,11 +241,11 @@ def line_login():
         
         if 'error' in res_data:
             print("LINE Token Error:", res_data)
-            return jsonify({'error': res_data.get('error_description', 'LINE 授權失敗')}), 400
+            return jsonify({'error': res_data.get('error_description', 'LINE ??憭望?')}), 400
             
         id_token_str = res_data.get('id_token')
         if not id_token_str:
-            return jsonify({'error': '無法取得 LINE ID Token'}), 400
+            return jsonify({'error': '?⊥??? LINE ID Token'}), 400
             
         decoded = jwt.decode(id_token_str, channel_secret, algorithms=["HS256"], audience=channel_id, issuer="https://access.line.me")
         
@@ -284,7 +284,7 @@ def line_login():
                 db.users.update_one({"id": user['id']}, {"$set": updates})
             
         return jsonify({
-            'message': 'LINE 登入成功',
+            'message': 'LINE ?餃??',
             'user': {
                 'id': user.get('id'),
                 'name': user.get('name'),
@@ -295,27 +295,27 @@ def line_login():
         
     except Exception as e:
         print(f"LINE Login error: {e}")
-        return jsonify({'error': 'LINE 登入處理發生錯誤'}), 500
+        return jsonify({'error': 'LINE ?餃???潛??航炊'}), 500
 
 
 @api_bp.route('/auth/register', methods=['POST'])
 def register():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "register API"
-    description: "這個 API 會執行 register 操作。"
+    description: "??API ?銵?register ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     method = data.get('method') # 'PHONE' or 'EMAIL'
@@ -326,15 +326,15 @@ def register():
     role = data.get('role', 'BUYER')
     
     if not contact or not password or not code or not name:
-        return jsonify({'error': '請填寫所有欄位'}), 400
+        return jsonify({'error': '隢‵撖急???雿?}), 400
         
     if code != '123456': # Mock verification code
-        return jsonify({'error': '驗證碼錯誤 (測試期間請輸入 123456)'}), 400
+        return jsonify({'error': '撽?蝣潮隤?(皜祈岫??隢撓??123456)'}), 400
         
     # Check if exists
     existing = db.users.find_one({("phone" if method == 'PHONE' else "email"): contact})
     if existing:
-        return jsonify({'error': '此帳號已註冊'}), 400
+        return jsonify({'error': '甇文董?歇閮餃?'}), 400
         
     new_user = {
         "id": generate_uuid(),
@@ -348,60 +348,60 @@ def register():
     }
     db.users.insert_one(new_user)
     
-    return jsonify({'message': '註冊成功'})
+    return jsonify({'message': '閮餃???'})
 
 @api_bp.route('/admin/test-users', methods=['GET'])
 def get_test_users():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "get_test_users API"
-    description: "這個 API 會執行 get_test_users 操作。"
+    description: "??API ?銵?get_test_users ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     admin_id = request.args.get('admin_id')
     admin = db.users.find_one({"id": admin_id, "role": "ADMIN"})
     if not admin:
-        return jsonify({'error': '無權限'}), 403
+        return jsonify({'error': '?⊥???}), 403
         
     test_users = list(db.users.find({"is_test": True}, {"_id": 0}))
     return jsonify([{
         'id': u.get('id'),
         'name': u.get('name'),
         'role': u.get('role'),
-        'phone': u.get('phone') or u.get('email') or '未設定',
-        'password': u.get('password') or '未設定'
+        'phone': u.get('phone') or u.get('email') or '?芾身摰?,
+        'password': u.get('password') or '?芾身摰?
     } for u in test_users])
 
 
 @api_bp.route('/bids', methods=['POST'])
 def place_bid():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "place_bid API"
-    description: "這個 API 會執行 place_bid 操作。"
+    description: "??API ?銵?place_bid ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     product_id = data.get('product_id')
@@ -468,21 +468,21 @@ def place_bid():
 @api_bp.route('/orders', methods=['POST'])
 def create_order():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "create_order API"
-    description: "這個 API 會執行 create_order 操作。"
+    description: "??API ?銵?create_order ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     buyer_id = data.get('buyer_id')
@@ -504,21 +504,21 @@ def create_order():
 @api_bp.route('/orders/<order_id>/status', methods=['POST'])
 def update_order_status(order_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "update_order_status API"
-    description: "這個 API 會執行 update_order_status 操作。"
+    description: "??API ?銵?update_order_status ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     new_status = data.get('status') # TOSHIP, SHIPPED, COMPLETED
@@ -538,21 +538,21 @@ def update_order_status(order_id):
 @api_bp.route('/calls', methods=['POST'])
 def create_call():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "create_call API"
-    description: "這個 API 會執行 create_call 操作。"
+    description: "??API ?銵?create_call ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     caller_id = data.get('caller_id')
@@ -581,21 +581,21 @@ def create_call():
 @api_bp.route('/calls/incoming', methods=['GET'])
 def check_incoming_calls():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "check_incoming_calls API"
-    description: "這個 API 會執行 check_incoming_calls 操作。"
+    description: "??API ?銵?check_incoming_calls ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     user_id = request.args.get('user_id')
     if not user_id:
@@ -617,21 +617,21 @@ def check_incoming_calls():
 @api_bp.route('/calls/<call_id>', methods=['GET'])
 def get_call(call_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "get_call API"
-    description: "這個 API 會執行 get_call 操作。"
+    description: "??API ?銵?get_call ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     call = db.calls.find_one({"id": call_id}, {"_id": 0})
     if not call:
@@ -641,21 +641,21 @@ def get_call(call_id):
 @api_bp.route('/calls/<call_id>/answer', methods=['POST'])
 def answer_call(call_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "answer_call API"
-    description: "這個 API 會執行 answer_call 操作。"
+    description: "??API ?銵?answer_call ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     answer = data.get('answer')
@@ -673,21 +673,21 @@ def answer_call(call_id):
 @api_bp.route('/calls/<call_id>/candidates', methods=['POST'])
 def add_ice_candidate(call_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "add_ice_candidate API"
-    description: "這個 API 會執行 add_ice_candidate 操作。"
+    description: "??API ?銵?add_ice_candidate ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     candidate = data.get('candidate')
@@ -704,21 +704,21 @@ def add_ice_candidate(call_id):
 @api_bp.route('/calls/<call_id>/end', methods=['POST'])
 def end_call(call_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "end_call API"
-    description: "這個 API 會執行 end_call 操作。"
+    description: "??API ?銵?end_call ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     db.calls.update_one(
         {"id": call_id},
@@ -732,21 +732,21 @@ def end_call(call_id):
 @api_bp.route('/messages', methods=['GET'])
 def get_messages():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "get_messages API"
-    description: "這個 API 會執行 get_messages 操作。"
+    description: "??API ?銵?get_messages ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     user1_id = request.args.get('user1')
     user2_id = request.args.get('user2')
@@ -766,21 +766,21 @@ def get_messages():
 @api_bp.route('/messages', methods=['POST'])
 def send_message():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "send_message API"
-    description: "這個 API 會執行 send_message 操作。"
+    description: "??API ?銵?send_message ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     sender_id = data['sender_id']
@@ -791,9 +791,9 @@ def send_message():
     
     # Check Blacklist
     if receiver_id in sender.get('blocked_users', []):
-        return jsonify({'error': '您已封鎖此對象，無法發送訊息。'}), 403
+        return jsonify({'error': '?典歇撠?甇文?鞊∴??⊥??潮??胯?}), 403
     if sender_id in receiver.get('blocked_users', []):
-        return jsonify({'error': '您已被對方封鎖，無法發送訊息。'}), 403
+        return jsonify({'error': '?典歇鋡怠??孵????⊥??潮??胯?}), 403
 
     db.messages.insert_one({
         "id": generate_uuid(),
@@ -807,21 +807,21 @@ def send_message():
 @api_bp.route('/users/<user_id>', methods=['PUT'])
 def update_user_profile(user_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "update_user_profile API"
-    description: "這個 API 會執行 update_user_profile 操作。"
+    description: "??API ?銵?update_user_profile ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     update_fields = {}
@@ -839,21 +839,21 @@ def update_user_profile(user_id):
 @api_bp.route('/notifications/<user_id>', methods=['GET'])
 def get_user_notifications(user_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "get_user_notifications API"
-    description: "這個 API 會執行 get_user_notifications 操作。"
+    description: "??API ?銵?get_user_notifications ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     # Fetch real notifications from database
     notifs = list(db.notifications.find({'user_id': user_id}, {'_id': 0}).sort('created_at', -1).limit(50))
@@ -862,8 +862,8 @@ def get_user_notifications(user_id):
         welcome_notif = {
             'id': 'welcome-1',
             'user_id': user_id,
-            'title': '歡迎加入 PetLive',
-            'content': '您已成功註冊並成為會員，開始探索各種珍奇異獸吧！',
+            'title': '甇∟?? PetBar',
+            'content': '?典歇??閮餃?銝行??箸??∴????Ｙ揣?車???啁?改?',
             'created_at': datetime.utcnow().isoformat(),
             'read': False
         }
@@ -876,21 +876,21 @@ def get_user_notifications(user_id):
 @api_bp.route('/users/<user_id>', methods=['GET'])
 def get_user(user_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "get_user API"
-    description: "這個 API 會執行 get_user 操作。"
+    description: "??API ?銵?get_user ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     u = db.users.find_one({"id": user_id}, {"_id": 0})
     if not u:
@@ -969,21 +969,21 @@ def get_user(user_id):
 @api_bp.route('/user/<user_id>/settings', methods=['GET', 'PUT'])
 def user_settings(user_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "user_settings API"
-    description: "這個 API 會執行 user_settings 操作。"
+    description: "??API ?銵?user_settings ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     if request.method == 'GET':
         user = db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
@@ -1007,21 +1007,21 @@ def user_settings(user_id):
 @api_bp.route('/users/<user_id>/view', methods=['POST'])
 def view_user(user_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "view_user API"
-    description: "這個 API 會執行 view_user 操作。"
+    description: "??API ?銵?view_user ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     today_str = datetime.utcnow().strftime('%Y-%m-%d')
     u = db.users.find_one({"id": user_id})
@@ -1035,21 +1035,21 @@ def view_user(user_id):
 @api_bp.route('/users/<user_id>/gallery', methods=['POST'])
 def add_gallery_media(user_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "add_gallery_media API"
-    description: "這個 API 會執行 add_gallery_media 操作。"
+    description: "??API ?銵?add_gallery_media ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     url = data.get('url')
@@ -1078,21 +1078,21 @@ def add_gallery_media(user_id):
 @api_bp.route('/users/<user_id>/gallery/<media_id>', methods=['DELETE'])
 def delete_gallery_media(user_id, media_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "delete_gallery_media API"
-    description: "這個 API 會執行 delete_gallery_media 操作。"
+    description: "??API ?銵?delete_gallery_media ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     db.users.update_one(
         {"id": user_id},
@@ -1103,21 +1103,21 @@ def delete_gallery_media(user_id, media_id):
 @api_bp.route('/users/<user_id>/following', methods=['GET'])
 def get_following(user_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "get_following API"
-    description: "這個 API 會執行 get_following 操作。"
+    description: "??API ?銵?get_following ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     u = db.users.find_one({"id": user_id}, {"_id": 0})
     if not u:
@@ -1134,21 +1134,21 @@ def get_following(user_id):
 @api_bp.route('/users/<user_id>/follow', methods=['POST'])
 def toggle_follow(user_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "toggle_follow API"
-    description: "這個 API 會執行 toggle_follow 操作。"
+    description: "??API ?銵?toggle_follow ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     target_id = data.get('target_id')
@@ -1171,21 +1171,21 @@ def toggle_follow(user_id):
 @api_bp.route('/users/<user_id>/block', methods=['POST'])
 def toggle_block(user_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "toggle_block API"
-    description: "這個 API 會執行 toggle_block 操作。"
+    description: "??API ?銵?toggle_block ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     target_id = data.get('target_id')
@@ -1211,7 +1211,7 @@ def toggle_block(user_id):
             # Check if one is seller and one is buyer of this product
             if (product['seller_id'] == target_id and bid['user_id'] == user_id) or \
                (product['seller_id'] == user_id and bid['user_id'] == target_id):
-                return jsonify({'error': '交易中（有活躍的競標或訂單），不可封鎖！'}), 400
+                return jsonify({'error': '鈭斗?銝哨??暑頨?蝡嗆????殷?嚗??臬???'}), 400
 
     blocked = u.get('blocked_users', [])
     if target_id in blocked:
@@ -1229,21 +1229,21 @@ def toggle_block(user_id):
 @api_bp.route('/pricing', methods=['GET'])
 def get_pricing():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "get_pricing API"
-    description: "這個 API 會執行 get_pricing 操作。"
+    description: "??API ?銵?get_pricing ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     config = db.configs.find_one({"id": "pricing"}, {"_id": 0})
     if not config:
@@ -1258,27 +1258,27 @@ def get_pricing():
 @api_bp.route('/pricing', methods=['POST'])
 def update_pricing():
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "update_pricing API"
-    description: "這個 API 會執行 update_pricing 操作。"
+    description: "??API ?銵?update_pricing ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     admin_id = data.get('admin_id')
     admin = db.users.find_one({"id": admin_id, "role": "ADMIN"})
     if not admin:
-        return jsonify({'error': '無權限'}), 403
+        return jsonify({'error': '?⊥???}), 403
         
     db.configs.update_one(
         {"id": "pricing"},
@@ -1290,26 +1290,26 @@ def update_pricing():
         }},
         upsert=True
     )
-    return jsonify({'message': '定價已更新'})
+    return jsonify({'message': '摰撌脫??})
 
 @api_bp.route('/users/<user_id>/upgrade', methods=['POST'])
 def upgrade_user(user_id):
     """
-    獲取或修改資料 API
+    ?脣??耨?寡???API
     ---
     tags:
-      - 系統 API
+      - 蝟餌絞 API
     summary: "upgrade_user API"
-    description: "這個 API 會執行 upgrade_user 操作。"
+    description: "??API ?銵?upgrade_user ????
     responses:
       200:
-        description: 成功返回資料
+        description: ??餈?鞈?
         schema:
           type: object
       400:
-        description: 請求參數錯誤
+        description: 隢???航炊
       500:
-        description: 伺服器內部錯誤
+        description: 隡箸??典?券隤?
     """
     data = request.json
     upgrade_type = data.get('type') # 'TIER' or 'ADDON'
@@ -1322,13 +1322,13 @@ def upgrade_user(user_id):
         
     if upgrade_type == 'TIER' and target_tier is not None:
         db.users.update_one({"id": user_id}, {"$set": {"tier": target_tier, "role": "SELLER" if target_tier > 0 else "BUYER"}})
-        return jsonify({'message': '升級成功', 'tier': target_tier})
+        return jsonify({'message': '????', 'tier': target_tier})
         
     if upgrade_type == 'ADDON' and addon_name:
         db.users.update_one({"id": user_id}, {"$addToSet": {"addons": addon_name}})
-        return jsonify({'message': '加值功能解鎖成功'})
+        return jsonify({'message': '?澆??質圾????})
         
-    return jsonify({'error': '無效的升級請求'}), 400
+    return jsonify({'error': '?⊥???蝝?瘙?}), 400
 
 @api_bp.route('/system/settings', methods=['GET'])
 def get_system_settings():
@@ -1346,7 +1346,7 @@ def update_system_settings():
     config['system'] = data
     with open('config.json', 'w', encoding='utf-8') as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
-    return jsonify({'message': '系統設定已更新', 'system': config['system']})
+    return jsonify({'message': '蝟餌絞閮剖?撌脫??, 'system': config['system']})
 
 @api_bp.route('/live/rooms/<room_id>/vod', methods=['POST'])
 def upload_vod(room_id):
@@ -1387,5 +1387,5 @@ def extend_vod(room_id):
             "vod_expires_at": None
         }}
     )
-    return jsonify({'message': 'VOD 已付費永久保存成功'})
+    return jsonify({'message': 'VOD 撌脖?鞎餅偶銋?摮???})
 

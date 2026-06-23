@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['webrtc-tree'],
   images: {
     remotePatterns: [
       {
@@ -23,6 +24,14 @@ const nextConfig: NextConfig = {
         source: '/myapp/:path*',
         destination: 'http://127.0.0.1:9000/myapp/:path*',
       },
+      {
+        source: '/peer-api/socket.io',
+        destination: 'http://127.0.0.1:9000/socket.io/',
+      },
+      {
+        source: '/peer-api/:path*',
+        destination: 'http://127.0.0.1:9000/:path*',
+      }
     ]
   },
   allowedDevOrigins: ['192.168.0.86', 'pepa.ngrok.app', '49.158.138.26', 'localhost']

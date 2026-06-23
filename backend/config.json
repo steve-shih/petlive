@@ -1,7 +1,7 @@
-{
+ï»¿{
   "database": {
-    "mongo_uri": "mongodb+srv://shihcarl_db_user:yYoKdzstKkas1T5r@cluster0.5j6fbvu.mongodb.net/petlive?appName=Cluster0",
-    "db_name": "petlive"
+    "mongo_uri": "mongodb+srv://shihcarl_db_user:yYoKdzstKkas1T5r@cluster0.5j6fbvu.mongodb.net/petbar?appName=Cluster0",
+    "db_name": "petbar"
   },
   "upload": {
     "folder_name": "uploads"
@@ -23,6 +23,6 @@
   },
   "system": {
     "marquee_enabled": true,
-    "marquee_text": "¥Ø«e¬°¶}µo©ÎºûÅ@´Á"
+    "marquee_text": "?æ¡€??ç²¹??æ½­?è¬å‰›é¢¨??
   }
 }
