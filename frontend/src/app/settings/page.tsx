@@ -63,7 +63,7 @@ export default function SettingsPage() {
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        showToast("閮剖?撌脣摮?, "success");
+        showToast("閮剖?撌脣摮", "success");
       } else {
         showToast("?脣?憭望?", "error");
       }
@@ -101,12 +101,12 @@ export default function SettingsPage() {
 
       {/* Contact & Security */}
       <div className="bg-surface rounded-2xl p-6 shadow-sm border border-surface/50">
-        <h2 className="text-xl font-bold mb-4">?舐窗????/h2>
+        <h2 className="text-xl font-bold mb-4">?舐窗??</h2>
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-surface/50 pb-4">
             <div>
               <div className="font-bold">Email</div>
-              <div className="text-sm text-text-secondary">{formData.email} <span className="text-green-500 text-xs ml-2">??撌脤?霅?/span></div>
+              <div className="text-sm text-text-secondary">{formData.email} <span className="text-green-500 text-xs ml-2">??撌脤?霅</span></div>
             </div>
           </div>
           <div className="flex items-center justify-between border-b border-surface/50 pb-4">
@@ -124,7 +124,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between pt-2">
             <div>
               <div className="font-bold">撖Ⅳ</div>
-              <div className="text-sm text-text-secondary">摰??湔撖Ⅳ隞乩??董????/div>
+              <div className="text-sm text-text-secondary">摰??湔撖Ⅳ隞乩??董??</div>
             </div>
             <button className="text-brand font-bold hover:underline">靽格撖Ⅳ</button>
           </div>
@@ -133,8 +133,8 @@ export default function SettingsPage() {
 
       {/* Address Book */}
       <div className="bg-surface rounded-2xl p-6 shadow-sm border border-surface/50">
-        <h2 className="text-xl font-bold mb-4">?嗡辣?啣?蝪?/h2>
-        <p className="text-sm text-text-secondary mb-4">?憭?5 蝑?蝯阡?鞎??蝙??/p>
+        <h2 className="text-xl font-bold mb-4">?嗡辣?啣?蝪</h2>
+        <p className="text-sm text-text-secondary mb-4">?憭?5 蝑?蝯阡?鞎??蝙</p>
         <div className="space-y-3">
           {formData.addressBook.map((addr, index) => (
             <input 
@@ -191,7 +191,7 @@ export default function SettingsPage() {
       {/* Danger Zone */}
       <div className="border border-red-500/50 rounded-2xl p-6 mt-12 bg-red-500/5">
         <h2 className="text-red-500 font-bold mb-2">?梢??</h2>
-        <p className="text-sm text-text-secondary mb-4">閮駁撣唾?敺??函??犖鞈?撠◤瘞訾?皜嚗?鈭斗?蝝??靽??迨???⊥?敺拙???/p>
+        <p className="text-sm text-text-secondary mb-4">閮駁撣唾?敺??函??犖鞈?撠◤瘞訾?皜嚗?鈭斗?蝝??靽??迨???⊥?敺拙?</p>
         <button className="bg-red-500 text-white font-bold px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm">
           閮駁撣唾?
         </button>

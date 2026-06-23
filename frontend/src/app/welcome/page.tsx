@@ -76,7 +76,7 @@ export default function WelcomePage() {
           <FadeIn delay={800} className="mt-12">
             <div className="flex flex-col items-center text-text-secondary/60 animate-bounce">
               <span className="text-sm tracking-widest uppercase mb-2">???脣??Ｙ揣</span>
-              <span className="text-2xl">??/span>
+              <span className="text-2xl"></span>
             </div>
           </FadeIn>
         </div>
@@ -125,7 +125,7 @@ export default function WelcomePage() {
             <FadeIn delay={200} className="flex-1">
               <div className="bg-red-500/10 border border-red-500/20 rounded-3xl p-8 h-full backdrop-blur-sm">
                 <div className="flex items-center gap-3 mb-8">
-                  <span className="text-4xl">??/span>
+                  <span className="text-4xl"></span>
                   <h3 className="text-2xl font-bold text-red-400">?喟絞蝷曄黎撟喳</h3>
                 </div>
                 <ul className="space-y-6">
@@ -137,7 +137,7 @@ export default function WelcomePage() {
                     "蝟餌絞銝?湔暑擃漱???寞?
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-text-secondary">
-                      <span className="mt-1 text-red-500/70 text-sm">??/span>
+                      <span className="mt-1 text-red-500/70 text-sm"></span>
                       <span className="text-lg">{item}</span>
                     </li>
                   ))}
@@ -149,7 +149,7 @@ export default function WelcomePage() {
               <div className="bg-gradient-to-b from-brand/20 to-surface border border-brand/30 rounded-3xl p-8 h-full shadow-[0_0_40px_rgba(245,166,35,0.1)] backdrop-blur-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl">??</div>
                 <div className="flex items-center gap-3 mb-8 relative z-10">
-                  <span className="text-4xl">??/span>
+                  <span className="text-4xl"></span>
                   <h3 className="text-2xl font-bold text-brand">PetBar 撖湎AR</h3>
                 </div>
                 <ul className="space-y-6 relative z-10">
@@ -161,7 +161,7 @@ export default function WelcomePage() {
                     "撠惇?孵秘? (憒??箏?閮?璈?"
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-white">
-                      <span className="mt-1 text-brand text-sm">??/span>
+                      <span className="mt-1 text-brand text-sm"></span>
                       <span className="text-lg font-medium">{item}</span>
                     </li>
                   ))}
@@ -185,7 +185,7 @@ export default function WelcomePage() {
             >
               <div className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
               <span className="relative flex items-center gap-3">
-                ?脣撖萇鈭斗? <span>??/span>
+                ?脣撖萇鈭斗? <span></span>
               </span>
             </button>
           </FadeIn>

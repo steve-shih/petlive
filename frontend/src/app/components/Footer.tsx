@@ -31,7 +31,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="font-bold text-lg mb-4 text-white">???鼠??/h3>
+            <h3 className="font-bold text-lg mb-4 text-white">???鼠</h3>
             <ul className="space-y-3 text-text-secondary">
               <li><Link href="/help" className="hover:text-brand transition-colors">撟怠銝剖?</Link></li>
               <li><Link href="/help?tab=doa" className="hover:text-brand transition-colors">DOA 瘣駁?靽?</Link></li>
@@ -43,7 +43,7 @@ export default function Footer() {
         </div>
 
         <div className="pt-8 border-t border-surface/50 text-center text-text-secondary text-sm flex flex-col md:flex-row justify-between items-center gap-4">
-          <p>live.petpa.tw 2026 ?????/p>
+          <p>live.petpa.tw 2026 ???</p>
           <div className="flex space-x-6">
             <Link href="/legal?tab=terms" className="hover:text-brand transition-colors">雿輻璇狡</Link>
             <Link href="/legal?tab=privacy" className="hover:text-brand transition-colors">?梁??輻?</Link>
