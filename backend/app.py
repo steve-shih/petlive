@@ -1,4 +1,4 @@
-﻿import os
+import os
 from flask import Flask
 from flask_cors import CORS
 from models import db, generate_uuid
@@ -31,7 +31,7 @@ swagger_config = {
 swagger_template = {
     "info": {
         "title": "撖湎AR - PetBar API",
-        "description": "? PetBar 瘣駁?蝡嗆???剖像?啁? API ?辣???? API ?賢甇文?蝢抵?皜祈岫??,
+        "description": "PetBar API",
         "version": "1.0.0"
     }
 }
