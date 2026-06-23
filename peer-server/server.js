@@ -81,8 +81,8 @@ if (mode === '2') {
     });
   });
 
-  httpServer.listen(9000, () => {
-    console.log('Socket.io (MODE 2) signaling server is running on port 9000');
+  httpServer.listen(3000, () => {
+    console.log('Socket.io (MODE 2) signaling server is running on port 3000');
   });
 
 } else {
@@ -90,7 +90,7 @@ if (mode === '2') {
   const { PeerServer } = require('peer');
 
   const peerServer = PeerServer({ 
-    port: 9000, 
+    port: 3000, 
     path: '/peer-api',
     allow_discovery: true,
     proxied: true
@@ -104,5 +104,5 @@ if (mode === '2') {
     console.log('Client disconnected from PeerJS:', client.getId());
   });
 
-  console.log('PeerJS custom signaling server is running on ws://localhost:9000/myapp');
+  console.log('PeerJS custom signaling server is running on ws://localhost:3000/peer-api');
 }

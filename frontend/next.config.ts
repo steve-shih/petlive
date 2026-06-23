@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
 
       {
         source: '/peer-api/:path*',
-        destination: 'http://127.0.0.1:9000/peer-api/:path*',
+        destination: 'http://127.0.0.1:3000/peer-api/:path*',
       }
     ]
   },
